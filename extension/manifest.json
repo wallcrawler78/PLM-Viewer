@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "Review Studio \u00b7 Universal Viewer",
+  "description": "Review STEP models and PDF/Word documents in a packaged local workspace, with an optional Arena launch connection.",
+  "version": "0.7.0",
+  "permissions": [
+    "contextMenus",
+    "storage"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "options_page": "options.html",
+  "action": {
+    "default_title": "Open Review Studio"
+  },
+  "content_security_policy": {
+    "extension_pages": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; object-src 'none'; frame-src 'none'; worker-src 'self'; connect-src 'self' blob:; img-src 'self' data: blob:; font-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'none';"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://app.bom.com/*",
+        "https://app.arenagov.com/*",
+        "https://app.europe.arenaplm.com/*",
+        "https://app.uk.arenaplm.com/*"
+      ],
+      "js": [
+        "content-script.js"
+      ],
+      "css": [
+        "content-script.css"
+      ],
+      "run_at": "document_start"
+    }
+  ]
+}

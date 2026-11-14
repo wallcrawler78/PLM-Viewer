@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>STEP performance lab · development only</title>
+    <style>
+      :root { color-scheme: light; font: 14px/1.5 system-ui,sans-serif; color:#17313e; background:#eef2f5; }
+      * { box-sizing: border-box; } body { margin:0; }
+      header, main { max-width:1440px; margin:auto; padding:20px 24px; }
+      header { padding-bottom:10px; } h1 { font-size:24px; margin:0 0 6px; }
+      p { margin:5px 0; } .eyebrow { color:#15766f; font-weight:700; letter-spacing:.06em; font-size:12px; }
+      .controls { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
+      button, select, input { font:inherit; } button, select { border:1px solid #bccdd6; border-radius:7px; background:white; color:inherit; padding:8px 12px; }
+      button { cursor:pointer; } button:disabled { opacity:.48; cursor:default; } button.primary { background:#126d68; color:white; border-color:#126d68; }
+      button:focus-visible, input:focus-visible, select:focus-visible { outline:3px solid #48aca4; outline-offset:2px; }
+      #status { background:white; border:1px solid #d5e0e6; padding:10px 12px; border-radius:8px; min-height:44px; margin-bottom:12px; }
+      #viewport { position:relative; height:560px; width:100%; background:#edf1f4; border:1px solid #c5d4dc; border-radius:9px; overflow:hidden; }
+      #viewport canvas { display:block; width:100%; height:100%; touch-action:none; }
+      .metadata { display:flex; gap:20px; flex-wrap:wrap; margin:8px 0 16px; font-size:13px; }
+      details { background:white; border:1px solid #d5e0e6; border-radius:8px; padding:12px; margin-top:14px; }
+      summary { font-weight:650; cursor:pointer; } pre { white-space:pre-wrap; word-break:break-word; font:12px/1.45 ui-monospace,monospace; max-height:480px; overflow:auto; }
+      .notes { max-width:100ch; color:#496371; } .bad { color:#a33322; }
+      @media(max-width:700px) { header,main { padding:14px; } #viewport { height:460px; } }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="eyebrow">DEVELOPMENT ONLY · LOCAL SOURCE TEST</div>
+      <h1>STEP performance lab</h1>
+      <p class="notes">Uses the production local file checks, CAD worker and viewer engine. No upload, conversion API or increased file limit. This page is outside the production build entry.</p>
+    </header>
+    <main>
+      <div class="controls">
+        <label>STEP source <input id="source" type="file" accept=".step,.stp" /></label>
+        <label>3D quality <select id="quality"><option value="standard">Standard</option><option value="economy">Economy</option></select></label>
+        <button id="load" class="primary">Load selected STEP</button>
+        <button id="close" disabled>Close model / cancel import</button>
+      </div>
+      <div id="status" role="status" aria-live="polite">Choose a STEP file, then load it.</div>
+      <div class="controls">
+        <button id="sequence" disabled>Run 10 camera views</button>
+        <button id="fit" disabled>Fit</button>
+        <button id="bounds" disabled aria-pressed="false">Bounds</button>
+        <button id="visibility" disabled aria-pressed="false">Hide model</button>
+        <button id="measure" disabled aria-pressed="false">Measure points</button>
+        <label>Opacity <input id="opacity" type="range" min="0.1" max="1" step="0.1" value="1" disabled /></label>
+        <button id="snapshot">Refresh report</button>
+        <button id="download">Download JSON report</button>
+      </div>
+      <div id="viewport" aria-label="Performance test model viewport"></div>
+      <div class="metadata"><span id="renderer">Renderer: not started</span><span id="envelope">No source loaded</span><span id="measurement"></span></div>
+      <p class="notes">Drag to orbit, right-drag to pan, scroll to zoom. Camera runs call the actual engine's standard-view commands. Render times are synchronous CPU time inside the real renderer call; for WebGL they measure command submission, not GPU execution or displayed FPS. The next animation frame after the first model draw is a paint opportunity, not proof of display presentation.</p>
+      <details open><summary>Bounded performance report</summary><pre id="report" tabindex="0">No runs yet.</pre></details>
+    </main>
+    <script type="module" src="./step-browser.ts"></script>
+  </body>
+</html>

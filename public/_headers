@@ -1,0 +1,9 @@
+/fixtures/*
+  Cache-Control: no-store
+  X-Content-Type-Options: nosniff
+/developer/*
+  Cache-Control: no-store
+  X-Content-Type-Options: nosniff
+/*
+  Referrer-Policy: same-origin
+  X-Content-Type-Options: nosniff

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Review Studio settings</title><link rel="stylesheet" href="options.css"></head>
+<body><main>
+  <header><span class="brand-mark" aria-hidden="true">R</span><div><span class="badge">REVIEW STUDIO</span><span class="version">CHROME VIEWER</span></div></header>
+  <h1>One workspace.<br>Every perspective.</h1>
+  <p class="intro">Read specifications, compare revisions, and inspect models in the viewer packaged with this extension.</p>
+  <section class="preview-card" aria-labelledby="preview-heading">
+    <div class="section-title"><span class="badge">LOCAL PREVIEW</span><span class="local-pill">Included in your extension</span></div>
+    <h2 id="preview-heading">Start a review</h2>
+    <p>Use the sample BOM and files to try the tools. Preview needs no Arena connection or hosted viewer.</p>
+    <div class="preview-actions"><button type="button" data-preview="pdf">Read a PDF<span>Pages, search, source details</span></button><button type="button" data-preview="word">Read a Word document<span>DOCX with local rendering</span></button><button type="button" data-preview="compare">Compare PDF revisions<span>Text redlines, linked pages</span></button><button type="button" data-preview="model">Inspect the assembly<span>Local STEP processing</span></button></div>
+    <button type="button" class="text-button" data-preview="together">View a model and drawing together <span aria-hidden="true">↗</span></button>
+  </section>
+  <details class="runtime-tools"><summary>Local runtime checks</summary><p>Test the packaged STEP, PDF, and Word engines inside this installed extension. The checks use included synthetic files and produce an optional report with versions and results.</p><button id="runtime-checks" type="button">Open local runtime checks</button></details>
+  <section aria-labelledby="connection-heading">
+  <div class="section-title"><span class="badge">ARENA CONNECTION</span><span class="status-pill">Administrator setup</span></div>
+  <h2 id="connection-heading">Connect a live workspace</h2>
+  <p>The current live connection opens your configured hosted viewer and its authenticated Arena service. Direct MCP sign-in from the packaged viewer is not connected yet.</p>
+  <form id="settings">
+    <label>Hosted Arena viewer URL <span>(optional for Preview)</span><input id="viewerUrl" type="url" placeholder="https://your-viewer.example.com" autocomplete="off"></label>
+    <label>Arena workspace ID <span>(for live launches)</span><input id="workspaceId" maxlength="200" autocomplete="off"></label>
+    <label class="checkbox-row"><input id="autoOpenAttachments" type="checkbox"><span><strong>Open verified attachment links automatically</strong><small>For STEP, PDF, and DOCX links with exact source context on supported Arena application pages. Other links keep their normal behavior.</small></span></label>
+    <p class="field-note">Automatic opening is off by default. It needs a configured live viewer, workspace, and links containing item, revision, file edition, and source hash. Actual Arena routes still need workspace validation.</p>
+    <button type="submit">Save settings</button>
+  </form>
+  </section>
+  <details><summary>Open an exact Arena source</summary>
+    <p>The hosted viewer uses your Arena permissions. A missing connection shows its setup or sign-in state and never substitutes sample files.</p>
+    <form id="launch">
+      <label>Item GUID<input id="itemId" required maxlength="200" autocomplete="off"></label>
+      <label>Item revision <span>(optional)</span><input id="revision" maxlength="100" autocomplete="off"></label>
+      <label>File GUID <span>(optional)</span><input id="fileId" maxlength="200" autocomplete="off"></label>
+      <div class="form-pair"><label>File edition <span>(optional)</span><input id="edition" maxlength="200" autocomplete="off"></label><label>Source SHA-256 <span>(optional)</span><input id="sourceHash" maxlength="64" autocomplete="off"></label></div>
+      <button type="submit">Open Arena context</button>
+    </form>
+  </details>
+  <p id="notice" role="status" aria-live="polite"></p>
+  <footer>Settings contain no Arena credentials or attachment bytes. Preview review notes and saved views remain in this browser. Legacy .doc, OCR, and shared live comments are not included in this release.</footer>
+</main><script type="module" src="options.js"></script></body></html>

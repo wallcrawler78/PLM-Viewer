@@ -1,0 +1,46 @@
+{
+  "name": "arena-assembly-review",
+  "private": true,
+  "version": "0.7.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "prepare:assets": "node scripts/prepare-runtime-assets.mjs",
+    "predev": "npm run prepare:assets",
+    "dev": "vite --host 0.0.0.0",
+    "prebuild": "npm run prepare:assets",
+    "build": "tsc -b && vite build && node scripts/package-source.mjs",
+    "build:extension": "npm run build && node scripts/build-extension.mjs",
+    "test": "vitest run",
+    "check": "tsc -b && vitest run",
+    "preflight:arena": "node server/preflight.mjs",
+    "preview": "vite preview --host 0.0.0.0",
+    "fixtures": "python3 scripts/generate-fixtures.py"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/client": "2.4.0",
+    "@fontsource/dm-sans": "5.3.0",
+    "@fontsource/manrope": "5.3.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "three": "0.177.0",
+    "lucide-react": "0.511.0",
+    "pdfjs-dist": "5.3.31",
+    "docx-preview": "0.3.6",
+    "occt-import-js": "0.0.23"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.29",
+    "es-module-lexer": "2.3.2",
+    "jszip": "3.10.2",
+    "@types/react": "19.1.6",
+    "@types/react-dom": "19.1.6",
+    "@types/three": "0.177.0",
+    "@vitejs/plugin-react": "4.5.1",
+    "typescript": "5.8.3",
+    "vite": "6.4.6",
+    "vitest": "4.1.12"
+  }
+}

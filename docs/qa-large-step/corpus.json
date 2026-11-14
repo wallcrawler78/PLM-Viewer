@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 1,
+  "title": "External STEP performance corpus",
+  "reviewDate": "2026-11-13",
+  "reviewTimeZone": "America/Los_Angeles",
+  "purpose": "Reproduce local STEP conversion, browser interaction and source-size rejection checks without adding third-party CAD bytes to the application.",
+  "storage": "Download outside the repository. These sources are not shipped in the Preview, extension or portable source archive.",
+  "identityPolicy": "SHA-256 and exact byte length identify the tested bytes. GitHub URLs use exact commits; the Zenodo URL uses the specific record version. The STEP Tools URL has no immutable version and must still match its recorded SHA-256.",
+  "metadataPolicy": "Exporter information comes from the downloaded STEP header. A blank STEP author field is not replaced with an inferred individual author. Licenses below record publisher or repository declarations.",
+  "files": [
+    {
+      "name": "revo-voron.step",
+      "title": "Voron Stealthburner RevoVoron printhead",
+      "originalName": "Stealthburner_Printhead_RevoVoron.step",
+      "sourcePage": "https://github.com/VoronDesign/Voron-Stealthburner",
+      "sourcePath": "CAD/Printheads/Stealthburner_Printhead_RevoVoron.step",
+      "sourceRevision": "1572a42e6df5d2f0ddf04a2145be4dc9c3693723",
+      "downloadUrl": "https://raw.githubusercontent.com/VoronDesign/Voron-Stealthburner/1572a42e6df5d2f0ddf04a2145be4dc9c3693723/CAD/Printheads/Stealthburner_Printhead_RevoVoron.step",
+      "bytes": 5816658,
+      "sha256": "f1305ea805b14e8bf6b0d503df72ef11ea17f1abe5654c3d7ff3081d81aa5535",
+      "publisher": "VoronDesign",
+      "authors": [],
+      "authorNote": "Published by the VoronDesign project; the STEP header does not name an individual author.",
+      "declaredLicense": {
+        "identifier": "GPL-3.0",
+        "sourceUrl": "https://github.com/VoronDesign/Voron-Stealthburner/blob/1572a42e6df5d2f0ddf04a2145be4dc9c3693723/LICENSE",
+        "scope": "Repository license declaration. Preserve the upstream license and attribution for any redistribution."
+      },
+      "exporter": {
+        "evidence": "STEP FILE_NAME and FILE_SCHEMA header fields",
+        "originatingSystem": "Autodesk Translation Framework v15.8.0.0",
+        "preprocessor": "ST-DEVELOPER v20.1",
+        "schema": "AUTOMOTIVE_DESIGN { 1 0 10303 214 3 1 1 }",
+        "timestamp": "2026-05-01T19:43:37-04:00"
+      },
+      "testedRole": "Medium mechanical geometry below the 32 MiB source limit; conversion and browser interaction candidate."
+    },
+    {
+      "name": "helicopter-rotor.step",
+      "title": "Helicopter main rotor",
+      "originalName": "ROTOR-201NAL-Z7.STEP",
+      "sourcePage": "https://www.steptools.com/docs/stpfiles/bigassy/",
+      "sourceRevision": null,
+      "downloadUrl": "https://www.steptools.com/docs/stpfiles/bigassy/ROTOR-201NAL-Z7.STEP",
+      "bytes": 6947174,
+      "sha256": "b5c4f9c0676f675b32ea425e5bc624c01296d9ef26e939eb87cd335ac81866ed",
+      "publisher": "STEP Tools, Inc. sample-data collection",
+      "authors": [],
+      "authorNote": "The sample page credits an original GrabCAD source; no individual author was established in this review, and the STEP author field is blank.",
+      "declaredLicense": {
+        "identifier": null,
+        "sourceUrl": "https://www.steptools.com/docs/stpfiles/bigassy/",
+        "scope": "Public sample download; no explicit redistribution grant was established. Keep the original outside the application and published source package."
+      },
+      "exporter": {
+        "evidence": "STEP FILE_NAME and FILE_SCHEMA header fields; the sample page also identifies SolidWorks",
+        "originatingSystem": "SolidWorks 2015",
+        "preprocessor": "SwSTEP 2.0",
+        "schema": "AUTOMOTIVE_DESIGN",
+        "timestamp": "2015-08-09T02:09:45"
+      },
+      "testedRole": "SolidWorks mechanical assembly below the 32 MiB source limit; conversion and browser interaction candidate."
+    },
+    {
+      "name": "minisb-bowden.step",
+      "title": "Voron Mini Stealthburner Bowden toolhead",
+      "originalName": "MiniSB_Bowden.step",
+      "sourcePage": "https://github.com/VoronDesign/Voron-0",
+      "sourcePath": "CAD/Bowden Toolhead/MiniSB_Bowden.step",
+      "sourceRevision": "a0d5d1bc91d1b3bc0af6109384d8704f2bf97d10",
+      "downloadUrl": "https://raw.githubusercontent.com/VoronDesign/Voron-0/a0d5d1bc91d1b3bc0af6109384d8704f2bf97d10/CAD/Bowden%20Toolhead/MiniSB_Bowden.step",
+      "bytes": 13499676,
+      "sha256": "d19b2896e3f22074ceb3c5a2b80cca682de1942b57017a8f0d1e833dd3be3d4f",
+      "publisher": "VoronDesign",
+      "authors": [],
+      "authorNote": "Published by the VoronDesign project; the STEP header does not name an individual author.",
+      "declaredLicense": {
+        "identifier": "GPL-3.0",
+        "sourceUrl": "https://github.com/VoronDesign/Voron-0/blob/a0d5d1bc91d1b3bc0af6109384d8704f2bf97d10/LICENSE",
+        "scope": "Repository license declaration. Preserve the upstream license and attribution for any redistribution."
+      },
+      "exporter": {
+        "evidence": "STEP FILE_NAME and FILE_SCHEMA header fields",
+        "originatingSystem": "Autodesk Translation Framework v13.14.0.145",
+        "preprocessor": "ST-DEVELOPER v20",
+        "schema": "AUTOMOTIVE_DESIGN { 1 0 10303 214 3 1 1 }",
+        "timestamp": "2024-06-06T11:01:12-07:00"
+      },
+      "testedRole": "Larger mechanical subassembly below the 32 MiB source limit; conversion and browser interaction candidate."
+    },
+    {
+      "name": "robot-head.step",
+      "title": "Robot head assembly from the binaural-ear research dataset",
+      "originalName": "Assembly_Robot_Head.step",
+      "sourcePage": "https://zenodo.org/records/20695787",
+      "sourceRevision": "Zenodo record 20695787, version v1; DOI 10.5281/zenodo.20695787",
+      "downloadUrl": "https://zenodo.org/api/records/20695787/files/Assembly_Robot_Head.step/content",
+      "bytes": 27163284,
+      "sha256": "2a2eb1ec04ab98233032b59d564433f67802d31523222c90b2657cc7df11991c",
+      "publisherMd5": "50082be2a77558a86f22eb81d5911594",
+      "publisher": "Zenodo; Seoul National University research deposit",
+      "authors": [
+        "Semin Ahn",
+        "Hyunkyoon Kim",
+        "Huijae Moon",
+        "Yeon June Kang",
+        "Sung Hoon Ahn"
+      ],
+      "authorNote": "Creators credited by the Zenodo record; the STEP header itself has a blank author field.",
+      "declaredLicense": {
+        "identifier": "CC-BY-4.0",
+        "sourceUrl": "https://zenodo.org/api/records/20695787",
+        "scope": "The official record metadata declares cc-by-4.0. Credit the listed creators and DOI, link the license and identify modifications if redistributed."
+      },
+      "exporter": {
+        "evidence": "STEP FILE_NAME and FILE_SCHEMA header fields",
+        "originatingSystem": "Autodesk Translation Framework v15.8.0.0",
+        "preprocessor": "ST-DEVELOPER v20.1",
+        "schema": "AUTOMOTIVE_DESIGN { 1 0 10303 214 3 1 1 }",
+        "timestamp": "2026-06-11T14:58:13+09:00"
+      },
+      "testedRole": "Assembly near the 32 MiB source ceiling; conversion qualification and resource-limit behavior candidate."
+    },
+    {
+      "name": "stealthburner-assembly.step",
+      "title": "Voron Stealthburner CW2.5 assembly",
+      "originalName": "Stealthburner_CW2.5_Assembly.step",
+      "sourcePage": "https://github.com/VoronDesign/Voron-Stealthburner",
+      "sourcePath": "CAD/Stealthburner_CW2.5_Assembly.step",
+      "sourceRevision": "1572a42e6df5d2f0ddf04a2145be4dc9c3693723",
+      "downloadUrl": "https://raw.githubusercontent.com/VoronDesign/Voron-Stealthburner/1572a42e6df5d2f0ddf04a2145be4dc9c3693723/CAD/Stealthburner_CW2.5_Assembly.step",
+      "bytes": 39503810,
+      "sha256": "afced4dad35ddf30f4a67d28e2ee8d9bef81b9459e6edcd806acb602ad2688fb",
+      "publisher": "VoronDesign",
+      "authors": [],
+      "authorNote": "Published by the VoronDesign project; the STEP header does not name an individual author.",
+      "declaredLicense": {
+        "identifier": "GPL-3.0",
+        "sourceUrl": "https://github.com/VoronDesign/Voron-Stealthburner/blob/1572a42e6df5d2f0ddf04a2145be4dc9c3693723/LICENSE",
+        "scope": "Repository license declaration. Preserve the upstream license and attribution for any redistribution."
+      },
+      "exporter": {
+        "evidence": "STEP FILE_NAME and FILE_SCHEMA header fields",
+        "originatingSystem": "Autodesk Translation Framework v15.17.0.0",
+        "preprocessor": "ST-DEVELOPER v20.2",
+        "schema": "AUTOMOTIVE_DESIGN { 1 0 10303 214 3 1 1 }",
+        "timestamp": "2026-11-08T09:45:09-05:00"
+      },
+      "testedRole": "Above the 32 MiB source limit: verify early size rejection. This role does not establish whether OCCT could convert the source."
+    }
+  ]
+}

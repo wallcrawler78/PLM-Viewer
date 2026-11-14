@@ -1,0 +1,763 @@
+{
+  "units": "mm",
+  "upAxis": "Z",
+  "generator": {
+    "name": "CadQuery / Open CASCADE",
+    "cadquery": "2.7.0",
+    "ocp": "7.8.1.1",
+    "pipeline": "Construct solids -> export STEP -> import STEP -> validate -> tessellate",
+    "meshLinearDeflectionMm": 0.1,
+    "boundingBoxMethod": "Open CASCADE BRepBndLib.AddOptimal; useTriangulation=false; useShapeTolerance=false"
+  },
+  "parts": [
+    {
+      "id": "base",
+      "itemNumber": "PLT-1001",
+      "name": "Mounting plate",
+      "revision": "A",
+      "stepUrl": "/fixtures/step/base-A.step",
+      "meshUrl": "/fixtures/meshes/base-A.json",
+      "color": "#8ca1b8",
+      "material": "Aluminum 6061-T6",
+      "materialSource": "Synthetic fixture metadata",
+      "bbox": {
+        "min": [
+          -90.0,
+          -60.0,
+          0.0
+        ],
+        "max": [
+          90.0,
+          60.0,
+          8.0
+        ]
+      },
+      "volumeMm3": 168990.983,
+      "sourceHash": "5650fc9fef62b215c44b55af3018da6289eabbff6241d38460333fcdb8884ca0",
+      "tessellation": {
+        "linearDeflectionMm": 0.1,
+        "angularDeflectionRadians": 0.15,
+        "triangles": 4412
+      },
+      "bboxMethod": "Open CASCADE BRepBndLib.AddOptimal; useTriangulation=false; useShapeTolerance=false",
+      "bboxTessellationIndependent": true
+    },
+    {
+      "id": "base",
+      "itemNumber": "PLT-1001",
+      "name": "Mounting plate",
+      "revision": "B",
+      "stepUrl": "/fixtures/step/base-B.step",
+      "meshUrl": "/fixtures/meshes/base-B.json",
+      "color": "#8ca1b8",
+      "material": "Aluminum 6061-T6",
+      "materialSource": "Synthetic fixture metadata",
+      "bbox": {
+        "min": [
+          -90.0,
+          -68.0,
+          0.0
+        ],
+        "max": [
+          90.0,
+          68.0,
+          8.0
+        ]
+      },
+      "volumeMm3": 192030.983,
+      "sourceHash": "2a49a7104bbaf9290fc12ab6eba3cc09a300b3a22e3a270260830ce38d7e71ce",
+      "tessellation": {
+        "linearDeflectionMm": 0.1,
+        "angularDeflectionRadians": 0.15,
+        "triangles": 4412
+      },
+      "bboxMethod": "Open CASCADE BRepBndLib.AddOptimal; useTriangulation=false; useShapeTolerance=false",
+      "bboxTessellationIndependent": true
+    },
+    {
+      "id": "motor",
+      "itemNumber": "MTR-2001",
+      "name": "Brushless motor",
+      "revision": "A",
+      "stepUrl": "/fixtures/step/motor-A.step",
+      "meshUrl": "/fixtures/meshes/motor-A.json",
+      "color": "#24485e",
+      "material": "Aluminum housing",
+      "materialSource": "Synthetic fixture metadata",
+      "bbox": {
+        "min": [
+          -43.0,
+          -29.0000001,
+          -34.0
+        ],
+        "max": [
+          43.0,
+          29.0000001,
+          36.0000001
+        ]
+      },
+      "volumeMm3": 217418.632,
+      "sourceHash": "52fc624a6e363c9c549fa205341fd5321832e7cd99e87dbc9e6d86ffcdca0852",
+      "tessellation": {
+        "linearDeflectionMm": 0.1,
+        "angularDeflectionRadians": 0.15,
+        "triangles": 6954
+      },
+      "bboxMethod": "Open CASCADE BRepBndLib.AddOptimal; useTriangulation=false; useShapeTolerance=false",
+      "bboxTessellationIndependent": true
+    },
+    {
+      "id": "gearbox",
+      "itemNumber": "GBX-2002",
+      "name": "Gearbox housing",
+      "revision": "A",
+      "stepUrl": "/fixtures/step/gearbox-A.step",
+      "meshUrl": "/fixtures/meshes/gearbox-A.json",
+      "color": "#b4c7d5",
+      "material": "Aluminum A380",
+      "materialSource": "Synthetic fixture metadata",
+      "bbox": {
+        "min": [
+          -36.0,
+          -35.0,
+          -31.0
+        ],
+        "max": [
+          36.0,
+          35.0,
+          31.0
+        ]
+      },
+      "volumeMm3": 167530.006,
+      "sourceHash": "ab015578fe18e283fb4984673d86feb444ec5a7d7c0ee0ce6f16f405d85b483f",
+      "tessellation": {
+        "linearDeflectionMm": 0.1,
+        "angularDeflectionRadians": 0.15,
+        "triangles": 2828
+      },
+      "bboxMethod": "Open CASCADE BRepBndLib.AddOptimal; useTriangulation=false; useShapeTolerance=false",
+      "bboxTessellationIndependent": true
+    },
+    {
+      "id": "shaft",
+      "itemNumber": "SFT-2003",
+      "name": "Output shaft",
+      "revision": "A",
+      "stepUrl": "/fixtures/step/shaft-A.step",
+      "meshUrl": "/fixtures/meshes/shaft-A.json",
+      "color": "#d0d9df",
+      "material": "Stainless steel 17-4 PH",
+      "materialSource": "Synthetic fixture metadata",
+      "bbox": {
+        "min": [
+          -5.0,
+          -14.0,
+          -14.0
+        ],
+        "max": [
+          44.0,
+          14.0,
+          14.0
+        ]
+      },
+      "volumeMm3": 15405.558,
+      "sourceHash": "4790986c8ea23edce39942bfbdb9a5bbaf1dad6655b77dbbbc16b0cf6283ac88",
+      "tessellation": {
+        "linearDeflectionMm": 0.1,
+        "angularDeflectionRadians": 0.15,
+        "triangles": 1064
+      },
+      "bboxMethod": "Open CASCADE BRepBndLib.AddOptimal; useTriangulation=false; useShapeTolerance=false",
+      "bboxTessellationIndependent": true
+    },
+    {
+      "id": "cover",
+      "itemNumber": "CVR-1002",
+      "name": "Ventilated cover",
+      "revision": "A",
+      "stepUrl": "/fixtures/step/cover-A.step",
+      "meshUrl": "/fixtures/meshes/cover-A.json",
+      "color": "#576f82",
+      "material": "Aluminum 5052-H32",
+      "materialSource": "Synthetic fixture metadata",
+      "bbox": {
+        "min": [
+          -36.0,
+          -35.0,
+          0.0
+        ],
+        "max": [
+          36.0,
+          35.0,
+          5.0
+        ]
+      },
+      "volumeMm3": 22773.753,
+      "sourceHash": "dc95331472b3c86fdd9574bf15de56685e6a1552591c1da7a8a4164618e61234",
+      "tessellation": {
+        "linearDeflectionMm": 0.1,
+        "angularDeflectionRadians": 0.15,
+        "triangles": 3796
+      },
+      "bboxMethod": "Open CASCADE BRepBndLib.AddOptimal; useTriangulation=false; useShapeTolerance=false",
+      "bboxTessellationIndependent": true
+    },
+    {
+      "id": "cover",
+      "itemNumber": "CVR-1002",
+      "name": "Ventilated cover",
+      "revision": "B",
+      "stepUrl": "/fixtures/step/cover-B.step",
+      "meshUrl": "/fixtures/meshes/cover-B.json",
+      "color": "#576f82",
+      "material": "Aluminum 5052-H32",
+      "materialSource": "Synthetic fixture metadata",
+      "bbox": {
+        "min": [
+          -36.0,
+          -35.0,
+          0.0
+        ],
+        "max": [
+          36.0,
+          35.0,
+          5.0
+        ]
+      },
+      "volumeMm3": 21766.333,
+      "sourceHash": "67ed8a9833f670fdbcdfc885e4aec4a708f94d71030278cd476fc0cb398bb0cf",
+      "tessellation": {
+        "linearDeflectionMm": 0.1,
+        "angularDeflectionRadians": 0.15,
+        "triangles": 4840
+      },
+      "bboxMethod": "Open CASCADE BRepBndLib.AddOptimal; useTriangulation=false; useShapeTolerance=false",
+      "bboxTessellationIndependent": true
+    },
+    {
+      "id": "fastener",
+      "itemNumber": "HW-3001",
+      "name": "M8 socket fastener",
+      "revision": "A",
+      "stepUrl": "/fixtures/step/fastener-A.step",
+      "meshUrl": "/fixtures/meshes/fastener-A.json",
+      "color": "#47515d",
+      "material": "Alloy steel",
+      "materialSource": "Synthetic fixture metadata",
+      "bbox": {
+        "min": [
+          -6.2,
+          -6.2,
+          0.0
+        ],
+        "max": [
+          6.2,
+          6.2,
+          16.0
+        ]
+      },
+      "volumeMm3": 1054.111,
+      "sourceHash": "2ce07834e75a86f2d541f6173d186d5db91f3825ae64873a5833ee64a3c07930",
+      "tessellation": {
+        "linearDeflectionMm": 0.1,
+        "angularDeflectionRadians": 0.15,
+        "triangles": 692
+      },
+      "bboxMethod": "Open CASCADE BRepBndLib.AddOptimal; useTriangulation=false; useShapeTolerance=false",
+      "bboxTessellationIndependent": true
+    },
+    {
+      "id": "sensor",
+      "itemNumber": "SNS-4001",
+      "name": "Position sensor and bracket",
+      "revision": "A",
+      "stepUrl": "/fixtures/step/sensor-A.step",
+      "meshUrl": "/fixtures/meshes/sensor-A.json",
+      "color": "#df9b42",
+      "material": "Stainless steel bracket",
+      "materialSource": "Synthetic fixture metadata",
+      "bbox": {
+        "min": [
+          -11.0,
+          -11.0,
+          0.0
+        ],
+        "max": [
+          11.0,
+          16.0,
+          29.0
+        ]
+      },
+      "volumeMm3": 6256.776,
+      "sourceHash": "e644c9412ef9a1202757bb786581a238198602b16fe364689df4c44e069d828b",
+      "tessellation": {
+        "linearDeflectionMm": 0.1,
+        "angularDeflectionRadians": 0.15,
+        "triangles": 860
+      },
+      "bboxMethod": "Open CASCADE BRepBndLib.AddOptimal; useTriangulation=false; useShapeTolerance=false",
+      "bboxTessellationIndependent": true
+    }
+  ],
+  "assemblies": {
+    "A": [
+      {
+        "id": "occ-base",
+        "partId": "base",
+        "partRevision": "A",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "name": "Mounting plate"
+      },
+      {
+        "id": "occ-motor",
+        "partId": "motor",
+        "partRevision": "A",
+        "position": [
+          -42,
+          0,
+          42
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "name": "Brushless motor"
+      },
+      {
+        "id": "occ-gearbox",
+        "partId": "gearbox",
+        "partRevision": "A",
+        "position": [
+          42,
+          0,
+          39
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "name": "Gearbox housing"
+      },
+      {
+        "id": "occ-shaft",
+        "partId": "shaft",
+        "partRevision": "A",
+        "position": [
+          78,
+          0,
+          39
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "name": "Output shaft"
+      },
+      {
+        "id": "occ-cover",
+        "partId": "cover",
+        "partRevision": "A",
+        "position": [
+          42,
+          0,
+          70
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "name": "Ventilated cover"
+      },
+      {
+        "id": "occ-bolt-1",
+        "partId": "fastener",
+        "partRevision": "A",
+        "position": [
+          -75,
+          -45,
+          -6
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "name": "M8 socket fastener 1"
+      },
+      {
+        "id": "occ-bolt-2",
+        "partId": "fastener",
+        "partRevision": "A",
+        "position": [
+          -75,
+          45,
+          -6
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "name": "M8 socket fastener 2"
+      },
+      {
+        "id": "occ-bolt-3",
+        "partId": "fastener",
+        "partRevision": "A",
+        "position": [
+          75,
+          45,
+          -6
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "name": "M8 socket fastener 3"
+      },
+      {
+        "id": "occ-bolt-4",
+        "partId": "fastener",
+        "partRevision": "A",
+        "position": [
+          75,
+          -45,
+          -6
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "name": "M8 socket fastener 4"
+      }
+    ],
+    "B": [
+      {
+        "id": "occ-base",
+        "partId": "base",
+        "partRevision": "B",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "name": "Mounting plate"
+      },
+      {
+        "id": "occ-motor",
+        "partId": "motor",
+        "partRevision": "A",
+        "position": [
+          -38,
+          0,
+          42
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "name": "Brushless motor"
+      },
+      {
+        "id": "occ-gearbox",
+        "partId": "gearbox",
+        "partRevision": "A",
+        "position": [
+          42,
+          0,
+          39
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "name": "Gearbox housing"
+      },
+      {
+        "id": "occ-shaft",
+        "partId": "shaft",
+        "partRevision": "A",
+        "position": [
+          78,
+          0,
+          39
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "name": "Output shaft"
+      },
+      {
+        "id": "occ-cover",
+        "partId": "cover",
+        "partRevision": "B",
+        "position": [
+          42,
+          0,
+          70
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "name": "Ventilated cover"
+      },
+      {
+        "id": "occ-bolt-1",
+        "partId": "fastener",
+        "partRevision": "A",
+        "position": [
+          -75,
+          -53,
+          -6
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "name": "M8 socket fastener 1"
+      },
+      {
+        "id": "occ-bolt-2",
+        "partId": "fastener",
+        "partRevision": "A",
+        "position": [
+          -75,
+          53,
+          -6
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "name": "M8 socket fastener 2"
+      },
+      {
+        "id": "occ-bolt-3",
+        "partId": "fastener",
+        "partRevision": "A",
+        "position": [
+          75,
+          53,
+          -6
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "name": "M8 socket fastener 3"
+      },
+      {
+        "id": "occ-sensor",
+        "partId": "sensor",
+        "partRevision": "A",
+        "position": [
+          65,
+          -43,
+          8
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "name": "Position sensor and bracket"
+      }
+    ]
+  },
+  "assemblyStepUrls": {
+    "A": "/fixtures/step/atlas-assembly-A.step",
+    "B": "/fixtures/step/atlas-assembly-B.step"
+  },
+  "documents": [
+    {
+      "id": "atlas-spec-A-pdf",
+      "itemId": "assembly",
+      "revision": "A",
+      "kind": "pdf",
+      "name": "Atlas module specification Rev A.pdf",
+      "url": "/fixtures/documents/atlas-spec-A.pdf",
+      "edition": "1",
+      "sourceHash": "820877e054ca2119ac86edd5491c6b89b7a37310fa205ea5280d21edf5da7417",
+      "text": "Atlas Drive Module Specification Revision A\nAssembly item: ASM-1000\nNominal base envelope: 180 x 120 x 8 mm\nMaximum installed width: 125.0 mm\nMounting hole diameter: 8.6 +0.2 / -0.0 mm\nMounting hole pitch Y: 90.0 +/- 0.1 mm\nMotor datum X: -42.0 +/- 0.2 mm\nCover vent count: 6\nInstalled mounting fasteners: 4\nSensor datum X: Not installed\nVerify the mounting pattern against the base STEP file and the installation envelope.\nConfirm fastener quantity using occurrences, not only the aggregate BOM row.\nRecord any clearance or installation concerns against this exact revision.\nResolve open findings before formal change approval in the PLM system."
+    },
+    {
+      "id": "base-drawing-A-pdf",
+      "itemId": "base",
+      "revision": "A",
+      "kind": "pdf",
+      "name": "Mounting plate drawing Rev A.pdf",
+      "url": "/fixtures/documents/base-drawing-A.pdf",
+      "edition": "1",
+      "sourceHash": "e3f76de7e97934cab2eddae3772373ca5d139337b86dfaefcfde40d413ea8125",
+      "text": "Mounting plate revision A. Nominal length 180 mm. Nominal width 120 mm. Nominal thickness 8 mm. Aluminum 6061-T6."
+    },
+    {
+      "id": "atlas-spec-A-docx",
+      "itemId": "assembly",
+      "revision": "A",
+      "kind": "docx",
+      "name": "Atlas module specification Rev A.docx",
+      "url": "/fixtures/documents/atlas-spec-A.docx",
+      "edition": "1",
+      "sourceHash": "ba4ed2939b82fbe71bd22d4a872da7cd0606ba63edb933d263fcf5724ec756fa",
+      "text": "Atlas Drive Module Specification Revision A\nAssembly item: ASM-1000\nNominal base envelope: 180 x 120 x 8 mm\nMaximum installed width: 125.0 mm\nMounting hole diameter: 8.6 +0.2 / -0.0 mm\nMounting hole pitch Y: 90.0 +/- 0.1 mm\nMotor datum X: -42.0 +/- 0.2 mm\nCover vent count: 6\nInstalled mounting fasteners: 4\nSensor datum X: Not installed\nVerify the mounting pattern against the base STEP file and the installation envelope.\nConfirm fastener quantity using occurrences, not only the aggregate BOM row.\nRecord any clearance or installation concerns against this exact revision.\nResolve open findings before formal change approval in the PLM system."
+    },
+    {
+      "id": "atlas-spec-B-pdf",
+      "itemId": "assembly",
+      "revision": "B",
+      "kind": "pdf",
+      "name": "Atlas module specification Rev B.pdf",
+      "url": "/fixtures/documents/atlas-spec-B.pdf",
+      "edition": "1",
+      "sourceHash": "6f7507dea2a33629394ffe5759b8f4ed0f058b2c999dbe6089255b3f9d0c9122",
+      "text": "Atlas Drive Module Specification Revision B\nAssembly item: ASM-1000\nNominal base envelope: 180 x 136 x 8 mm\nMaximum installed width: 140.0 mm\nMounting hole diameter: 8.6 +0.2 / -0.0 mm\nMounting hole pitch Y: 106.0 +/- 0.1 mm\nMotor datum X: -38.0 +/- 0.2 mm\nCover vent count: 9\nInstalled mounting fasteners: 3 pending structural review\nSensor datum X: 61.0 +/- 0.5 mm\nVerify the mounting pattern against the base STEP file and the installation envelope.\nConfirm fastener quantity using occurrences, not only the aggregate BOM row.\nConfirm the sensor datum at X = 61.0 mm. Attach a model pin and a document note if the model disagrees.\nResolve open findings before formal change approval in the PLM system."
+    },
+    {
+      "id": "base-drawing-B-pdf",
+      "itemId": "base",
+      "revision": "B",
+      "kind": "pdf",
+      "name": "Mounting plate drawing Rev B.pdf",
+      "url": "/fixtures/documents/base-drawing-B.pdf",
+      "edition": "1",
+      "sourceHash": "51f960f81d1181c642a55742f73f5f589c9880c216f41ac5fa6249ebfea412fc",
+      "text": "Mounting plate revision B. Nominal length 180 mm. Nominal width 136 mm. Nominal thickness 8 mm. Aluminum 6061-T6."
+    },
+    {
+      "id": "atlas-spec-B-docx",
+      "itemId": "assembly",
+      "revision": "B",
+      "kind": "docx",
+      "name": "Atlas module specification Rev B.docx",
+      "url": "/fixtures/documents/atlas-spec-B.docx",
+      "edition": "1",
+      "sourceHash": "1076ecb2320b5c86194053a04619b7138a4a8f0df6e25f54af4eb9728200856d",
+      "text": "Atlas Drive Module Specification Revision B\nAssembly item: ASM-1000\nNominal base envelope: 180 x 136 x 8 mm\nMaximum installed width: 140.0 mm\nMounting hole diameter: 8.6 +0.2 / -0.0 mm\nMounting hole pitch Y: 106.0 +/- 0.1 mm\nMotor datum X: -38.0 +/- 0.2 mm\nCover vent count: 9\nInstalled mounting fasteners: 3 pending structural review\nSensor datum X: 61.0 +/- 0.5 mm\nVerify the mounting pattern against the base STEP file and the installation envelope.\nConfirm fastener quantity using occurrences, not only the aggregate BOM row.\nConfirm the sensor datum at X = 61.0 mm. Attach a model pin and a document note if the model disagrees.\nResolve open findings before formal change approval in the PLM system."
+    },
+    {
+      "id": "gearbox-inspection-A-pdf",
+      "itemId": "gearbox",
+      "revision": "A",
+      "kind": "pdf",
+      "name": "Gearbox housing inspection Rev A.pdf",
+      "url": "/fixtures/documents/gearbox-inspection-A.pdf",
+      "edition": "1",
+      "sourceHash": "0a18ffafd71d7f6ffffdff9d296e6c7747ce47ec75e476c489d8b39d6a328eff",
+      "text": "Gearbox housing revision A. Envelope 72 x 70 x 62 mm. Main cavity radius 24 mm. Shaft bore diameter 20 mm. Aluminum A380. Unchanged in assembly configurations A and B."
+    }
+  ],
+  "synthetic": true,
+  "reviewScenarios": [
+    {
+      "id": "width",
+      "description": "Base width changes from 120 mm to 136 mm; the installation maximum changes from 125 mm to 140 mm."
+    },
+    {
+      "id": "motor-shift",
+      "description": "Unchanged motor geometry shifts +4 mm along assembly X."
+    },
+    {
+      "id": "sensor-datum",
+      "description": "Intentional discrepancy: revision B specification requires sensor X=61.0 mm, while occurrence transform places it at X=65.0 mm."
+    },
+    {
+      "id": "missing-fastener",
+      "description": "The fourth fastener occurrence is removed in revision B and requires review."
+    }
+  ],
+  "validation": [
+    {
+      "part": "base-A",
+      "valid": true,
+      "solids": 1,
+      "volumeDeltaMm3": 0.0,
+      "triangleCount": 4412
+    },
+    {
+      "part": "base-B",
+      "valid": true,
+      "solids": 1,
+      "volumeDeltaMm3": 0.0,
+      "triangleCount": 4412
+    },
+    {
+      "part": "motor-A",
+      "valid": true,
+      "solids": 1,
+      "volumeDeltaMm3": 5.71e-06,
+      "triangleCount": 6954
+    },
+    {
+      "part": "gearbox-A",
+      "valid": true,
+      "solids": 1,
+      "volumeDeltaMm3": 2e-09,
+      "triangleCount": 2828
+    },
+    {
+      "part": "shaft-A",
+      "valid": true,
+      "solids": 1,
+      "volumeDeltaMm3": 0.0,
+      "triangleCount": 1064
+    },
+    {
+      "part": "cover-A",
+      "valid": true,
+      "solids": 1,
+      "volumeDeltaMm3": 0.0,
+      "triangleCount": 3796
+    },
+    {
+      "part": "cover-B",
+      "valid": true,
+      "solids": 1,
+      "volumeDeltaMm3": 0.0,
+      "triangleCount": 4840
+    },
+    {
+      "part": "fastener-A",
+      "valid": true,
+      "solids": 1,
+      "volumeDeltaMm3": 0.0,
+      "triangleCount": 692
+    },
+    {
+      "part": "sensor-A",
+      "valid": true,
+      "solids": 1,
+      "volumeDeltaMm3": 0.0,
+      "triangleCount": 860
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+.model-load-failure { position: absolute; inset: 0; z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 13px; padding: 28px; background: #f3f6f8; color: #4c6579; text-align: center; overflow: auto; }
+.model-load-failure>svg { color: #a77a38; }
+.model-load-failure h3 { font-size: 17px; color: #344f64; }
+.model-load-failure p { max-width: 380px; font-size: 12px; line-height: 1.7; }
+.model-load-failure .model-load-draft-note { color: #8b6632; }
+.model-load-failure .button-row { flex-wrap: wrap; justify-content: center; margin-top: 4px; }
+.model-stage:has(>.model-load-failure)>:not(.model-load-failure) { visibility: hidden; }

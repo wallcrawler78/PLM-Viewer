@@ -1,0 +1,17 @@
+node_modules/
+dist/
+build/
+public/vendor/
+.env
+.env.*
+!.env.example
+.openai/local*
+*.tsbuildinfo
+*.log
+__pycache__/
+.pytest_cache/
+test-results/
+playwright-report/
+
+# Deployment identity belongs to the separately managed hosted checkout.
+.openai/

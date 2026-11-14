@@ -8,8 +8,6 @@ This repository is a **working Preview prototype with a user-bound Arena MCP int
 
 Source repository: [wallcrawler78/PLM-Viewer](https://github.com/wallcrawler78/PLM-Viewer). This checkout supports local development and agent-led Chrome extension qualification. Start with [the agent handoff](docs/agent-handoff.md) for build, installation, and test instructions. It originates from source commit `7c3278877b3a2a35bd52f1b0e9fc77ea2db13408`; the existing hosted Preview is maintained separately.
 
-![Universal document review workspace](docs/universal-documents.jpg)
-
 ## Run locally
 
 Use Node.js 22 or later and npm. Start from a repository checkout or an extracted source archive, then run:
