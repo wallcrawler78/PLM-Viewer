@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import JSZip from 'jszip';
 import { describe, expect, it, vi } from 'vitest';
 import { compareDocumentBlocks } from '../src/document-review';
-import { boundedDocumentTask, documentComparisonCoverage, documentExtraction, extractionCoverageMessage, failedDocumentExtraction, localPdfAssetUrls, readDocumentBytes, readDocumentSource } from '../src/document-extraction';
+import { boundedDocumentTask, documentComparisonCoverage, documentExtraction, extractionCoverageMessage, failedDocumentExtraction, localPdfAssetUrls, readDocumentBytes, readDocumentSource, verifyDocumentSource } from '../src/document-extraction';
 import { validateWordPackage, WORD_PACKAGE_LIMITS } from '../src/document-package';
 import { validateWordSymbols } from '../src/document-rendering';
 
@@ -210,5 +210,30 @@ describe('Word ZIP validation before rendering', () => {
     const features = validateWordSymbols({ parts: [{ body: { children: [{ type: 'inserted' }, { type: 'deleted' }, { type: 'commentRangeStart' }, { type: 'altChunk' }] } }] });
     expect(features).toEqual({ trackedChanges: true, comments: true, altChunks: true });
     expect(validateWordSymbols({ parts: [{ body: { children: [] } }] })).toEqual({ trackedChanges: false, comments: false, altChunks: false });
+  });
+});
+
+describe('document source verification', () => {
+  it('opens only bytes that match the declared edition hash', async () => {
+    const manifest = JSON.parse(await readFile(resolve('public/fixtures/manifest.json'), 'utf8'));
+    const declared: { url: string; sourceHash: string }[] = [];
+    const collect = (value: unknown) => {
+      if (Array.isArray(value)) value.forEach(collect);
+      else if (value && typeof value === 'object') {
+        const row = value as Record<string, unknown>;
+        if (typeof row.url === 'string' && typeof row.sourceHash === 'string' && row.url.startsWith('/fixtures/documents/')) declared.push({ url: row.url, sourceHash: row.sourceHash });
+        Object.values(row).forEach(collect);
+      }
+    };
+    collect(manifest);
+    expect(declared.length).toBeGreaterThan(1);
+    const bytes = async (url: string) => { const file = await readFile(resolve('public', url.slice(1))); return file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength) as ArrayBuffer; };
+    const [first, other] = [declared[0], declared.find(file => file.sourceHash !== declared[0].sourceHash)!];
+    await expect(verifyDocumentSource(await bytes(first.url), first.sourceHash)).resolves.toBeUndefined();
+    // Another edition served at the same location must not render under this identity.
+    await expect(verifyDocumentSource(await bytes(other.url), first.sourceHash)).rejects.toThrow('do not match this source edition');
+    for (const missing of [undefined, '', 'different-source', first.sourceHash.toUpperCase()]) {
+      await expect(verifyDocumentSource(await bytes(first.url), missing), String(missing)).rejects.toThrow('cannot be verified');
+    }
   });
 });

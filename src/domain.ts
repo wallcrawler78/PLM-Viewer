@@ -281,6 +281,11 @@ export function assertDocumentSeriesId(value: unknown): asserts value is string 
   if (value !== undefined && (typeof value !== 'string' || !value.trim() || value.length > 512 || /[\u0000-\u001f\u007f]/.test(value))) throw new Error('Invalid document series identifier.');
 }
 
+/** Lowercase SHA-256 of the exact source bytes. */
+export function isSourceHash(value: unknown): value is string {
+  return typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
+}
+
 function validIdentityText(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0 && value === value.trim() && value.length <= 512 && !/[\u0000-\u001f\u007f]/.test(value);
 }
@@ -318,7 +323,10 @@ export function validateSnapshot(snapshot: BomSnapshot): BomSnapshot {
     const key = `${p.id}:${p.revision}`;
     if (parts.has(key)) throw new Error(`Duplicate part edition: ${key}`);
     parts.add(key);
+    if (!validIdentityText(p.id) || !validIdentityText(p.revision)) throw new Error('Parts need an exact item identifier and revision.');
     assertSafeAssetUrl(p.stepUrl);
+    // A STEP source without its hash cannot be verified, so it is never an exact edition.
+    if ((p.stepUrl !== undefined || p.sourceHash !== undefined) && !isSourceHash(p.sourceHash)) throw new Error(`The STEP source for ${p.id} needs its exact SHA-256 source hash.`);
     if (p.meshUrl !== undefined) assertSafeAssetUrl(p.meshUrl);
     if (p.displaySource !== undefined && !['step', 'mesh'].includes(p.displaySource)) throw new Error(`Unsupported geometry source for ${p.id}`);
     if (p.displaySource === 'mesh' && !p.meshUrl) throw new Error(`The selected mesh derivative is unavailable for ${p.id}`);

@@ -4,9 +4,9 @@ A universal browser workspace for PDF, Word, and STEP 3D review. Documents and m
 
 This repository is a **working Preview prototype with a user-bound Arena MCP integration path**. Preview starts with an original synthetic Atlas Drive Module, two frozen BOM configurations, real generated STEP files, and supporting documents. Preview makes no requests to Arena and does not change PLM records. Explicit Arena launches use the separately configured server connection; missing configuration or denied access never falls back to fixtures.
 
-**Hosted preview:** [Review Studio](https://arena-assembly-review.wallcrawler78.chatgpt.site). Deployment status is reported in the handoff.
+**Hosted preview:** [Review Studio](https://arena-assembly-review.wallcrawler78.chatgpt.site). It is deployed from a separately managed checkout, is not published from this repository, and may lag this source.
 
-Source repository: [wallcrawler78/PLM-Viewer](https://github.com/wallcrawler78/PLM-Viewer). This checkout supports local development and agent-led Chrome extension qualification. Start with [the agent handoff](docs/agent-handoff.md) for build, installation, and test instructions. It originates from source commit `7c3278877b3a2a35bd52f1b0e9fc77ea2db13408`; the existing hosted Preview is maintained separately.
+Source repository: [wallcrawler78/PLM-Viewer](https://github.com/wallcrawler78/PLM-Viewer). This checkout supports local development and agent-led Chrome extension qualification. Start with [the agent handoff](docs/agent-handoff.md) for build, installation, and test instructions. It was imported from commit `7c3278877b3a2a35bd52f1b0e9fc77ea2db13408` of that separate checkout, which is not part of this repository's history. Agent conventions are in [AGENTS.md](AGENTS.md); Claude Code loads them through [CLAUDE.md](CLAUDE.md).
 
 ## Run locally
 

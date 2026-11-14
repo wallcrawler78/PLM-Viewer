@@ -229,6 +229,7 @@ export class ViewerEngine {
       let data: { positions: number[] | Float32Array; normals?: number[] | Float32Array; indices: number[] | Uint32Array };
       let warnings: string[] = [], cad: GeometryAsset['cad'];
       if (part.stepUrl) {
+        if (!part.sourceHash) throw new Error('This STEP source has no source hash, so its edition cannot be verified.');
         const result = await importStepUrl(part.stepUrl, part.sourceHash, controller.signal, part.cadNodePath, part.sourceToPart);
         data = result; warnings = result.warnings;
         cad = { hierarchy: result.hierarchy, meshRanges: result.meshRanges };

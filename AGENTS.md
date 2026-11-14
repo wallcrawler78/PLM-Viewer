@@ -13,7 +13,7 @@ Keep UI language about the review task. Explain precision, unavailable sources, 
 - `/api/viewer/v1` is the viewer-owned BFF contract. Verify current Arena API details before implementing a provider; do not guess endpoints or request payloads.
 - Keep credentials and session tokens on the authorized server. Do not add them to source, Git history, browser storage, the extension, logs, or client environment variables.
 - A broad service account is not proof of each human viewer's access. Authorize source reads and review writes in the proper user/workspace context.
-- This portable checkout omits deployment identity and is for local/extension development. Do not create or alter a hosted deployment as part of extension qualification. If working in a separately authorized Sites checkout that contains `.openai/hosting.json`, preserve its project identity and audience and use its supported source/package/deployment workflow.
+- This portable checkout omits deployment identity and is for local/extension development. Do not create or alter a hosted deployment as part of extension qualification. The hosted Preview is managed from a separate checkout with its own deployment tooling; nothing in this repository publishes to it. Build and verify here with `npm run check`, `npm run build`, and `npm run build:extension`.
 
 ## Domain and geometry
 

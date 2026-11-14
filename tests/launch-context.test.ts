@@ -71,6 +71,24 @@ describe('universal launch context', () => {
     ]) expect(() => resolvePreviewLaunch(parseLaunchContext(query), snapshots), query).toThrow();
   });
 
+  it('honours an exact edition and source-hash pin, and refuses a launch it cannot match', () => {
+    const spec = snapshots[1].documents.find(file => file.id === 'atlas-spec-B-pdf')!;
+    const base = snapshots[1].parts.find(part => part.id === 'base' && part.revision === 'B')!;
+    const pinned = resolvePreviewLaunch(parseLaunchContext(`?fileId=${spec.id}&edition=${spec.edition}&sourceHash=${spec.sourceHash}`), snapshots);
+    expect(pinned.file?.sourceHash).toBe(spec.sourceHash);
+    expect(resolvePreviewLaunch(parseLaunchContext(`?fileId=step%3Abase%3AB&sourceHash=${base.sourceHash}`), snapshots).selectedIds).toEqual(['occ-base']);
+    expect(() => resolvePreviewLaunch(parseLaunchContext(`?fileId=${spec.id}&sourceHash=${'0'.repeat(64)}`), snapshots)).toThrow('source hash does not match');
+    expect(() => resolvePreviewLaunch(parseLaunchContext(`?fileId=${spec.id}&edition=not-this-edition`), snapshots)).toThrow('edition is unavailable');
+    expect(() => resolvePreviewLaunch(parseLaunchContext(`?fileId=step%3Abase%3AB&sourceHash=${'0'.repeat(64)}`), snapshots)).toThrow('source hash does not match');
+    // The preview assembly STEP carries no hash and preview models no edition, so a pin on either cannot be honoured.
+    expect(() => resolvePreviewLaunch(parseLaunchContext(`?fileId=step%3Aassembly%3AB&sourceHash=${base.sourceHash}`), snapshots)).toThrow('source hash does not match');
+    expect(() => resolvePreviewLaunch(parseLaunchContext('?fileId=step%3Abase%3AB&edition=1'), snapshots)).toThrow('edition is unavailable');
+    expect(() => resolvePreviewLaunch(parseLaunchContext(`?itemId=base&sourceHash=${base.sourceHash}`), snapshots)).toThrow('exact file identifier');
+    for (const query of ['?fileId=a&sourceHash=not-a-hash', `?fileId=a&sourceHash=${'A'.repeat(64)}`, `?fileId=a&sourceHash=${'a'.repeat(64)}&sourceHash=${'b'.repeat(64)}`, '?fileId=a&edition=']) {
+      expect(() => parseLaunchContext(query), query).toThrow();
+    }
+  });
+
   it('never resolves Arena context with preview fixtures, even when its IDs happen to match', () => {
     const context = parseLaunchContext('?mode=arena&workspaceId=preview-precision&itemId=assembly&fileId=atlas-spec-B-pdf');
     expect(() => resolvePreviewLaunch(context, snapshots)).toThrow('Arena provider');
