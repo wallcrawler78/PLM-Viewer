@@ -4,7 +4,7 @@ A universal browser workspace for PDF, Word, and STEP 3D review. Documents and m
 
 This repository is a **working Preview prototype with a user-bound Arena MCP integration path**. Preview starts with an original synthetic Atlas Drive Module, two frozen BOM configurations, real generated STEP files, and supporting documents. Preview makes no requests to Arena and does not change PLM records. Explicit Arena launches use the separately configured server connection; missing configuration or denied access never falls back to fixtures.
 
-**Source version: 0.8.0 — Playground prototype.** The existing [hosted Preview](https://arena-assembly-review.wallcrawler78.chatgpt.site) remains **0.7.0** and has not been redeployed with Playground. Build this checkout to test the new workspace.
+**Source version: 0.8.0 — Playground prototype.** The private [hosted Preview](https://arena-assembly-review.wallcrawler78.chatgpt.site) now includes Playground. [Open Playground directly](https://arena-assembly-review.wallcrawler78.chatgpt.site/?mode=preview&playground=1) to try visual proposals and Preview ECR packages without installing the Chrome extension. AI and live Arena writes remain unconnected on this static test site.
 
 Source repository: [wallcrawler78/PLM-Viewer](https://github.com/wallcrawler78/PLM-Viewer). This checkout supports local development and agent-led Chrome extension qualification. Start with [the agent handoff](docs/agent-handoff.md) for build, installation, and test instructions. It originates from source commit `7c3278877b3a2a35bd52f1b0e9fc77ea2db13408`; the existing hosted Preview is maintained separately.
 

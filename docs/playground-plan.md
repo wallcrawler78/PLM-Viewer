@@ -4,7 +4,7 @@
 
 Playground is a separate proposal workspace inside the universal viewer. It edits interactive web 3D representations while retaining the exact source BOM, component occurrences and source geometry as a baseline. Original Arena files, released revisions and STEP bytes remain unchanged. Camera, explosion, hiding, opacity and presentation labels are display state; they do not imply proposed BOM changes.
 
-The source is version **0.8.0** on `feature/playground`. The separately maintained hosted Preview remains **0.7.0** and has not been redeployed with this feature. Documents, 3D inspection and Together remain the primary review workspaces; Playground adds design exploration and a preparation path for an ECR.
+The source is version **0.8.0** on `feature/playground`. The user-authorized private [hosted Preview](https://arena-assembly-review.wallcrawler78.chatgpt.site/?mode=preview&playground=1) now includes this feature. Hosted publication does not enable the optional AI gateway or live Arena ECR writes. Documents, 3D inspection and Together remain the primary review workspaces; Playground adds design exploration and a preparation path for an ECR.
 
 ## Delivered implementation
 

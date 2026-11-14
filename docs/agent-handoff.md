@@ -1,6 +1,6 @@
 # Agent handoff: 0.8 Playground and Chrome qualification
 
-Review Studio **0.8.0** adds the Playground to the existing STEP, PDF and DOCX universal viewer. It includes visual proposals, drawing/labeling, reference documents and a simulated ECR package workflow. Test this feature checkout or its generated package; the separately maintained hosted Preview remains **0.7.0** and has not been redeployed.
+Review Studio **0.8.0** adds the Playground to the existing STEP, PDF and DOCX universal viewer. It includes visual proposals, drawing/labeling, reference documents and a simulated ECR package workflow. Test this feature checkout, its generated package, or the private [hosted Playground](https://arena-assembly-review.wallcrawler78.chatgpt.site/?mode=preview&playground=1). The hosted test site now contains 0.8 local tools and Preview ECR preparation; optional AI and live Arena writes remain unconnected.
 
 The public 0.7 import was commit `048746c37555c9f46ecb2f7144446aa4b91092ad`, originating from prototype source commit `7c3278877b3a2a35bd52f1b0e9fc77ea2db13408`. Those identifiers describe the historical base, not the new Playground changes. Historical QA records retain their original source identifiers.
 

@@ -1,6 +1,6 @@
 # Playground 0.8 test guide
 
-This guide tests the **0.8.0 source/package**. The existing hosted Preview is still **0.7.0** and has not received Playground. Use a local build or the generated Chrome package for these steps.
+This guide tests the **0.8.0 source/package** and its private [hosted Preview](https://arena-assembly-review.wallcrawler78.chatgpt.site/?mode=preview&playground=1). Use the hosted test site, a local build, or the generated Chrome package for the applicable steps. A hosted test does not qualify an installed extension.
 
 ## What has and has not been verified
 
