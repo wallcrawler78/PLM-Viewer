@@ -4,9 +4,34 @@ A universal browser workspace for PDF, Word, and STEP 3D review. Documents and m
 
 This repository is a **working Preview prototype with a user-bound Arena MCP integration path**. Preview starts with an original synthetic Atlas Drive Module, two frozen BOM configurations, real generated STEP files, and supporting documents. Preview makes no requests to Arena and does not change PLM records. Explicit Arena launches use the separately configured server connection; missing configuration or denied access never falls back to fixtures.
 
-**Hosted preview:** [Review Studio](https://arena-assembly-review.wallcrawler78.chatgpt.site). Deployment status is reported in the handoff.
+**Source version: 0.8.0 — Playground prototype.** The existing [hosted Preview](https://arena-assembly-review.wallcrawler78.chatgpt.site) remains **0.7.0** and has not been redeployed with Playground. Build this checkout to test the new workspace.
 
 Source repository: [wallcrawler78/PLM-Viewer](https://github.com/wallcrawler78/PLM-Viewer). This checkout supports local development and agent-led Chrome extension qualification. Start with [the agent handoff](docs/agent-handoff.md) for build, installation, and test instructions. It originates from source commit `7c3278877b3a2a35bd52f1b0e9fc77ea2db13408`; the existing hosted Preview is maintained separately.
+
+## Playground in 0.8
+
+Choose **Playground** next to Documents, 3D and Together. It opens the placed components of the current resolved BOM in a separate visual proposal. Select an occurrence, move or rotate it, add a box, cylinder or bracket concept, edit the bracket's hole dimensions, and compare **Original**, **Proposed** and **Overlay**. Undo/Redo records proposed changes; explosion, hiding, opacity, camera and presentation labels remain display controls. Source STEP files and Arena items are not edited.
+
+Draw arrows, rectangles, ellipses, freehand marks, text labels and pins on the model or a PDF page. The camera stays held while drawing. Source-local anchors follow rigid component movement when the geometry still matches; view-only marks retain their camera and scene context. A hole change invalidates an old geometry anchor instead of silently moving its meaning. **Capture intent** preserves the image, original markup text, exact source and proposal version even if you later edit or delete that markup. PDF marks retain the exact file revision, edition, hash and page. Word remains readable and searchable; Playground drawing overlays currently apply to PDFs.
+
+The assistant connection is optional. Local manual tools and the Preview ECR flow work without an AI account. An authorized local development gateway can send typed or dictated instructions, selected scene data and an explicitly attached view to a configured model, then return a bounded suggestion for review. The installed Chrome package intentionally has **no AI transport** under its current connection policy. It contains no provider key. See [AI and Arena boundaries](docs/playground-ai.md) for configuration and the remaining extension transport work.
+
+### Create an ECR: the current six-step flow
+
+| Step | Current behavior |
+| --- | --- |
+| 1. Create ECR | Open the Playground ECR dialog. |
+| 2. Describe the proposal | Enter a title and change description; fields remain intact if preparation fails. |
+| 3. Review affected items | Source items currently in view start selected, deduplicated by item and revision. Other source items and the parent assembly can be included explicitly. Unnumbered concepts stay in the report. |
+| 4. Include design evidence | Capture the proposed configuration and include up to two saved model/PDF intent images with their original markup snapshots. |
+| 5. Prepare the description attachment | Generate a local Word `.docx` containing the description, affected items, accepted changes, assumptions and embedded images, plus a structured manifest and ZIP review package. |
+| 6. Show the creation result | Display an explicit **Preview ECR** receipt and download choices. No Arena record is created today. The Arena-link area will show an actual URL only after a future write binding creates and verifies a real ECR. |
+
+Preview proposal drafts save locally to the browser origin; live Arena proposals remain session drafts. Captured images and simulated receipts are session data, so use **Download review package** when you want to retain that evidence. Export/import of proposal JSON preserves scene intent and exact source binding without copying the original STEP/PDF/DOCX attachments.
+
+**Verification:** `npm run check` passed for 0.8.0 with **704 tests in 59 test files**, including TypeScript. `npm run build:extension` also passed for the 0.8.0 package. Browser interaction/layout and installed-Chrome qualification remain **pending manual gates**: automatic approval review blocked the attempted browser validation. No authenticated live AI call or live Arena ECR creation has been tested. Existing historical browser results apply to their recorded release, not to Playground.
+
+Use [the Playground test guide](docs/playground-testing.md) for a concrete local/Chrome walkthrough and [the implementation plan](docs/playground-plan.md) for delivered versus remaining phases.
 
 ## Run locally
 
@@ -43,7 +68,7 @@ Use **Documents**, **3D**, or **Together**. Document baselines are chosen explic
 
 For a standalone Chrome test, build with `npm run build:extension`, open `chrome://extensions`, enable Developer mode, and **Load unpacked** from `build/extension/` or the extracted extension ZIP. Do not load the source `extension/` directory. The toolbar opens the fully bundled viewer. See [Chrome installation and qualification](docs/chrome-extension.md), [implementation plan](docs/standalone-viewer-plan.md), and [runtime QA record](docs/standalone-runtime-qa.md).
 
-Version **0.7.0** moves text redlines into a packaged local worker, settles PDF pane resizing, avoids redundant model updates and adds browser-local viewing preferences. Standard/Economy 3D quality changes display resolution while preserving geometry and measurements. Document defaults apply to new comparisons without resetting an open review. See the [0.7 plan](docs/release-07-plan.md), [performance review](docs/performance-review.md), [preference roadmap](docs/user-preferences.md), and [0.7 verification](docs/release-07-qa.md).
+Version **0.7.0** introduced the earlier performance and preference work: it moves text redlines into a packaged local worker, settles PDF pane resizing, avoids redundant model updates and adds browser-local viewing preferences. Standard/Economy 3D quality changes display resolution while preserving geometry and measurements. Document defaults apply to new comparisons without resetting an open review. See the [0.7 plan](docs/release-07-plan.md), [performance review](docs/performance-review.md), [preference roadmap](docs/user-preferences.md), and [0.7 verification](docs/release-07-qa.md).
 
 **Larger STEP performance:** four public 5.55–25.90 MiB files passed repeated local conversion and browser rendering; a 37.67 MiB source was rejected by the existing cap. Dense models are slow in the measured Software 3D fallback. See [measured results](docs/large-step-performance.md), [source manifest](docs/qa-large-step/corpus.json), and [repeatable benchmark instructions](docs/step-benchmark-method.md). These results do not qualify WebGL2 hardware or an installed extension.
 
@@ -116,6 +141,10 @@ Document-first sessions defer the 3D engine until a model is opened and the Word
 | Review findings | Model occurrence/local-point anchors, document page or quoted-text anchors, replies, and resolve/reopen state |
 | Saved views | Source configuration, exact document and selected baseline editions/hashes, workspace layout, comparison mode, navigator/inspector visibility, split ratio, camera, and model selection/loading/visibility/opacity/section/explosion |
 | Preview persistence | Browser-local comments and views, separate workspaces, validated JSON import/export, explicit storage errors, and deliberate recovery from a valid backup when stored data is corrupt |
+| Playground proposals | Separate source baseline and proposed web 3D representation, occurrence-level transforms, parameterized concepts, original/proposed/overlay, bounded history, exact-source draft export/import |
+| Playground design intent | Model/PDF drawing tools, geometry/camera-aware anchors, frozen intent captures, source-bound reference documents, and editable text or browser dictation |
+| Preview ECR preparation | Description dialog, affected-item selection, actual rendered images, local DOCX report, manifest/ZIP export and an explicit simulated receipt; no live Arena write |
+| Optional Playground AI | Server-only provider adapter, explicit image sharing, typed bounded commands, source/version guards, cancellation and user-reviewed application; installed-extension transport remains unavailable |
 | Arena MCP integration | Server-only MCP SDK client, OAuth discovery/PKCE runtime, per-user session bridge, protected exact-source file delivery, schema/BOM/revision/attachment/supplier bindings, live launch loading, access-change clearing, and a Chrome launch extension; verified vendor mappings and production configuration remain required |
 
 ## Included test assembly
@@ -158,6 +187,8 @@ The repository includes nine part/revision STEP files, two complete assembly STE
 | `src/local-files.ts` and `src/components/LocalFileWorkspace.tsx` | Explicit local-file sessions, size/signature/hash checks, manual comparison, and object-URL lifecycle |
 | `src/launch-context.ts` and `src/components/FileNavigator.tsx` | Exact document/model launch resolution and source navigation |
 | `src/data/reviewStore.ts` and `src/view-state.ts` | Versioned local review persistence and saved-view validation |
+| `src/playground/` | Proposal state/history, incremental Three.js scene, concept geometry, source-bound markups, reference documents, assistant client, local draft storage and ECR report/dialog |
+| `server/playground*.mjs` | Optional authenticated AI gateway and a separate unmounted ECR orchestration contract for future verified Arena write bindings |
 | `src/App.tsx` | Workspace orchestration and user interface |
 | `extension/` and `scripts/build-extension.mjs` | Manifest V3 local viewer packaging, exact-context Arena launch bridge, optional click handling, and package validation |
 | `scripts/generate-fixtures.py` and `public/fixtures/` | Reproducible synthetic source assets and conversion metadata |
@@ -204,6 +235,10 @@ The Chrome extension's toolbar opens the packaged local viewer. Live Arena launc
 | Session continuity | Reader page/search/zoom and completed measurement graphics persist during applicable mode switches in the open session. They are not serialized in saved views. Changing model source/configuration, comparison mode, resetting the scene, or restoring a saved view clears measurements. |
 | Assembly scale | The fixture is a small, flat assembly. Explicit `placementSpace: "parent"` snapshots are composed through their hierarchy; omitted/`world` retains world poses. Exact hierarchy selectors and source-to-part transforms are still required when mapping placed CAD subtrees to BOM parts. Placement metadata is bounded to 50,000 occurrences and 256 levels, which is not a rendering-capacity promise. Large-model streaming and representative customer imports remain qualification work. |
 | File control | The app avoids automatic downloads of attachments. Display data is still received by the browser; hiding a model, a UI field, or a download button is not a confidentiality boundary. |
-| PLM workflow | The preview neither writes a hidden Arena field nor submits formal change approvals. Those require a verified server integration and an agreed review lifecycle. |
+| Playground scope | Visual mesh/primitive proposals, not CAD authoring, automatic drawing reconstruction, physical simulation, manufacturing validation or source-hole editing. PDF page drawing is implemented; a Word drawing overlay is not. The AI interpretation path is optional and has not been tested against a live provider. |
+| Playground capacity | Up to 2,000 nodes, 250 markups, 512 points per markup and 40 history steps; source geometry retains its local import limits and 96 MiB engine geometry budget. Proposal storage/import is bounded to 4 MiB. These are application bounds, not measured capacity promises. |
+| Playground persistence and captures | Preview drafts are local; live drafts, captured intent images and preview ECR receipts are session-only. Source delivery URLs/credentials and original file bytes are excluded from proposal exports. ECR captures are limited to three images of up to 2 MiB each; the review payload is capped at 12 MiB. |
+| Assistant and voice | Local web development can use an explicitly configured server-side AI gateway. The installed extension has no external AI transport. Browser dictation may use the browser vendor's speech service and is not guaranteed offline; it inserts editable text and never submits a prompt or ECR itself. |
+| PLM workflow | ECR creation is simulated: the app prepares a local Word report, images, manifest and ZIP. It does not create an Arena request, write a hidden field, attach files to Arena or submit an approval. Live writes need verified tools, user permissions, durable retry handling and record/URL readback. |
 
 See [AGENTS.md](AGENTS.md) for development conventions. No Arena credentials, API session tokens, or customer files belong in this repository or client bundle.

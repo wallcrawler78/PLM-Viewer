@@ -1,7 +1,7 @@
 {
   "name": "arena-assembly-review",
   "private": true,
-  "version": "0.7.0",
+  "version": "0.8.0",
   "type": "module",
   "engines": {
     "node": ">=22"
@@ -29,12 +29,12 @@
     "lucide-react": "0.511.0",
     "pdfjs-dist": "5.3.31",
     "docx-preview": "0.3.6",
-    "occt-import-js": "0.0.23"
+    "occt-import-js": "0.0.23",
+    "jszip": "3.10.2"
   },
   "devDependencies": {
     "@types/node": "22.15.29",
     "es-module-lexer": "2.3.2",
-    "jszip": "3.10.2",
     "@types/react": "19.1.6",
     "@types/react-dom": "19.1.6",
     "@types/three": "0.177.0",
