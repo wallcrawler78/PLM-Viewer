@@ -4,6 +4,8 @@ The extension package contains the viewer application, local STEP processing eng
 
 The first packaged release keeps the existing authenticated **hosted Arena viewer** as the live launch destination. Direct MCP authentication from the extension is not implemented or verified. An Arena launch never substitutes Preview when configuration or access fails.
 
+Version **0.8.0** adds a **Playground** tab to the packaged workspace. Its visual proposal tools, model/PDF markups and Preview ECR packages run locally. The optional AI gateway is available only to a separately configured web development/hosted viewer; this extension build does not connect to an AI service. Live Arena ECR creation is not enabled.
+
 ## Build
 
 From the repository root, with Node.js 22 or newer:
@@ -53,12 +55,16 @@ An unpacked test install is not a Chrome Web Store publication. Store distributi
 | **Page overview → Scan pages** | Scan same-number PDF pairs locally, inspect coverage and change summaries, pause/resume, and open any pair in the detailed overlay |
 | **Inspect the assembly** | Open the sample BOM/model and process its STEP sources locally |
 | **View a model and drawing together** | Open equal model/document panes |
+| **Playground** tab | Move/rotate visual component representations, add concept shapes, compare original/proposed views, explode, label, draw and Undo/Redo |
+| **Create ECR** in Playground | Describe the change, review the initially selected visible items, and prepare actual design/markup images plus a Word report in a clearly labeled Preview package |
 | **Open local test files** in the viewer header | Select actual STEP/STP, PDF and DOCX files without uploading them; choose comparison baselines explicitly |
 | **Local runtime checks** in Options | Verify package versions/source hashes and exercise real STEP/PDF/DOCX engines and graphics, with cancellation and a sanitized downloadable report |
 
 Core processing does not use a conversion API or AI model. Current format and precision limits still apply: legacy binary DOC and scanned-page OCR are not included; DOCX pagination is browser-based; document redlines compare extracted text. Visual PDF differences use a common scale and explicit selected pairs or a same-number page overview; there is no automatic registration or semantic page matching. Failed and unscanned overview pages remain coverage gaps. Each run is capped at 50 pairs, 60 million pixels and two minutes; the overview covers at most 300 pairs. Model point distances are mesh estimates. Shared live review storage is not connected. Preview notes and saved views are local browser review data.
 
 Normal PDF reading and Runtime Checks now use the same explicitly owned package-local native worker. An unavailable worker fails through the bounded load path; silent main-thread fallback is not accepted as a successful worker check. Per-page PDF resources are released cooperatively; source bytes/shared PDF caches remain until the document closes.
+
+For the new proposal workflow, follow `docs/playground-testing.md` in the source checkout. The Preview result offers image, Word and ZIP downloads; it does not fabricate an Arena URL. The live result is reserved for a verified write/readback once the actual MCP operations and durable submission journal are bound. Model edits change web 3D representations only. Word documents remain readable/searchable; drawing overlays apply to model views and PDF pages.
 
 ## Connect the existing live Arena path
 
@@ -112,6 +118,7 @@ Package validation and automated tests do not establish installed-Chrome behavio
 6. Verify ordinary keyboard activation, SPA links, modifier/middle-click fallback, automatic-opening opt-out, and settings changes while an Arena page is open.
 7. Test the final extension CSP and resource limits on representative laptops and large documents/assemblies.
 8. Complete dependency/distribution notices, a stable extension identity, and the selected production deployment process.
+9. Complete the 0.8 Playground checklist: proposal edits and Undo/Redo, source-bound model/PDF markups, state retention when switching tabs, visible-item defaults, real image/Word generation and the Preview-only ECR receipt. Confirm the local extension assistant stays explicitly unavailable without making an outside API request.
 
 The broader delivery sequence and outstanding Arena requirements are in `docs/standalone-viewer-plan.md`.
 
