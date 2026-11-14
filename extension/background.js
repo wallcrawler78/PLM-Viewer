@@ -2,6 +2,9 @@ import { arenaContext, previewTarget, viewerTarget } from './launch-url.js';
 import { ARENA_APPLICATION_PATTERNS, isArenaApplicationUrl, validateAttachmentMessage } from './attachment-action.js';
 
 const MENU = 'open-assembly-review';
+// Keep saved settings, including a user's Claude API key, out of reach of content scripts
+// running in Arena pages. Runs on every service-worker start.
+void chrome.storage.local.setAccessLevel({ accessLevel: 'TRUSTED_CONTEXTS' }).catch(() => {});
 chrome.runtime.onInstalled.addListener(async () => {
   await chrome.contextMenus.removeAll();
   // Application hosts listed by Arena's official service-status page. These only
@@ -26,6 +29,16 @@ chrome.contextMenus.onClicked.addListener(async (info) => {
   } catch (error) {
     await showLaunchError(error);
   }
+});
+
+// Arena pages cannot read extension storage. They receive only the launch settings they need.
+chrome.runtime.onMessage.addListener((message, sender, respond) => {
+  if (message?.type !== 'review-studio-launch-settings') return false;
+  if (sender.id !== chrome.runtime.id || !sender.tab || sender.frameId !== 0 || !isArenaApplicationUrl(sender.url) || !isArenaApplicationUrl(sender.tab.url)) { respond({ ok: false }); return false; }
+  chrome.storage.local.get(['viewerUrl', 'workspaceId', 'autoOpenAttachments']).then(
+    value => respond({ ok: true, viewerUrl: value.viewerUrl ?? '', workspaceId: value.workspaceId ?? '', autoOpenAttachments: value.autoOpenAttachments === true }),
+    () => respond({ ok: false }));
+  return true;
 });
 
 // Live sources keep the current authenticated hosted/BFF boundary. The bundled

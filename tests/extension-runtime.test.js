@@ -82,7 +82,7 @@ describe('extension background boundary', () => {
       action: { onClicked: { addListener(callback) { listeners.action = callback; } } },
       contextMenus: { removeAll: vi.fn(async () => {}), create: vi.fn(), onClicked: { addListener(callback) { listeners.menu = callback; } } },
       tabs: { create: vi.fn(async () => ({ id: 42 })) },
-      storage: { local: { get: vi.fn(async () => ({ ...connection })), set: vi.fn(async () => {}) } },
+      storage: { local: { get: vi.fn(async () => ({ ...connection })), set: vi.fn(async () => {}), setAccessLevel: vi.fn(async () => {}) } },
     };
     vi.stubGlobal('chrome', chrome);
     await import('../extension/background.js');

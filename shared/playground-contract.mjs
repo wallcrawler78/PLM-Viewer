@@ -1,4 +1,5 @@
-/** Fixed data contract for AI-assisted visual proposals. No executable output is accepted. */
+/** Fixed data contract for AI-assisted visual proposals. No executable output is accepted.
+ * Runs unchanged in Node and in the browser: no Node-only APIs. */
 export const ASSISTANT_LIMITS = Object.freeze({ requestBytes: 4 * 1024 * 1024, responseBytes: 512 * 1024, imageBytes: 2 * 1024 * 1024, nodes: 200, annotations: 100, commands: 40, timeoutMs: 90_000 });
 
 export class PlaygroundError extends Error {
@@ -11,6 +12,8 @@ export const ASSISTANT_ERRORS = Object.freeze({
   CONNECTION_CHANGED: [409, 'Your Arena connection changed. Reopen the source before using the assistant.'],
   TOO_LARGE: [413, 'The assistant request is too large. Use a smaller view or fewer annotations.'],
   BUSY: [429, 'The assistant is busy or its local request budget is reached. Try again shortly.'],
+  KEY_REJECTED: [502, 'The AI provider rejected the saved API key. Check it in the extension options.'],
+  REFUSED: [502, 'The AI provider declined this request. Your proposal is unchanged. Rephrase the request or remove the attached image.'],
   UNCONFIGURED: [503, 'The AI connection is not configured. Local Playground tools remain available.'],
   INVALID_PLAN: [502, 'The assistant returned an unsupported proposal. Your current proposal is unchanged.'],
   UPSTREAM_ERROR: [502, 'The AI provider could not complete this request. Your proposal is unchanged.'],
@@ -131,10 +134,11 @@ export function validateAssistantRequest(input) {
   if (input.annotationIds !== undefined) list(input.annotationIds, ASSISTANT_LIMITS.annotations).forEach(id => { if (!markIds.has(id)) fail(); });
   if (input.image !== undefined) {
     if (typeof input.image !== 'string' || input.image.length > Math.ceil(ASSISTANT_LIMITS.imageBytes / 3) * 4 + 30 || !/^data:image\/(?:png|jpeg);base64,[A-Za-z0-9+/]+={0,2}$/.test(input.image)) throw new PlaygroundError('TOO_LARGE');
-    const bytes = Buffer.from(input.image.split(',')[1], 'base64');
+    let bytes;
+    try { bytes = Uint8Array.from(atob(input.image.split(',')[1]), character => character.charCodeAt(0)); } catch { fail(); }
     if (bytes.length > ASSISTANT_LIMITS.imageBytes || bytes.length < 8) throw new PlaygroundError('TOO_LARGE');
     const png = input.image.startsWith('data:image/png;');
-    if (png ? !bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) : bytes[0] !== 0xff || bytes[1] !== 0xd8 || bytes[2] !== 0xff) fail();
+    if (png ? [137, 80, 78, 71, 13, 10, 26, 10].some((value, index) => bytes[index] !== value) : bytes[0] !== 0xff || bytes[1] !== 0xd8 || bytes[2] !== 0xff) fail();
     if (input.imageContext?.kind === 'model') { keys(input.imageContext, ['kind', 'camera', 'presentation']); camera(input.imageContext.camera); presentation(input.imageContext.presentation, ids); }
     else if (input.imageContext?.kind === 'document') documentIdentity(input.imageContext, true);
     else fail();

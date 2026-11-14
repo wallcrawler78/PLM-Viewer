@@ -8,11 +8,53 @@ const plan = (p = proposal()) => ({ requestId: 'request-1', proposalId: p.id, pr
 afterEach(() => vi.unstubAllGlobals());
 
 describe('Playground assistant client', () => {
-  it('does not contact an API from the packaged Chrome extension', async () => {
+  const extensionPage = (stored: Record<string, unknown>) => {
     vi.stubGlobal('location', { protocol: 'chrome-extension:' });
-    const fetcher = vi.fn();
-    expect(await readAssistantStatus({ sourceMode: 'preview', workspaceId: 'w' }, undefined, fetcher)).toMatchObject({ available: false, state: 'extension', liveEcr: false });
-    await expect(requestAssistantPlan(proposal(), 'Move this', {}, fetcher)).rejects.toMatchObject({ code: 'UNCONFIGURED' });
+    vi.stubGlobal('chrome', { storage: { local: { get: vi.fn(async () => ({ ...stored })) } } });
+  };
+  const claude = (text: unknown, init: { status?: number; stop_reason?: string } = {}) => vi.fn(async (..._call: Parameters<typeof fetch>) => new Response(JSON.stringify({ stop_reason: init.stop_reason ?? 'end_turn', content: [{ type: 'text', text: JSON.stringify(text) }] }), { status: init.status ?? 200, headers: { 'content-type': 'application/json' } }));
+  const wirePlan = { summary: 'Raise bracket by 5 mm.', commands: [{ type: 'transform', nodeId: 'occ-a', position: [0, 0, 5] }], assumptions: [], questions: [] };
+
+  it('contacts no API from the packaged Chrome extension until the user saves a key', async () => {
+    for (const stored of [{}, { assistantApiKey: '' }, { assistantApiKey: 'has space' }, { assistantApiKey: 'sk-ant-test', assistantModel: 'gpt-something' }]) {
+      extensionPage(stored);
+      const fetcher = vi.fn();
+      expect(await readAssistantStatus({ sourceMode: 'preview', workspaceId: 'w' }, undefined, fetcher)).toMatchObject({ available: false, state: 'extension', liveEcr: false });
+      await expect(requestAssistantPlan(proposal(), 'Move this', {}, fetcher)).rejects.toMatchObject({ code: 'UNCONFIGURED' });
+      expect(fetcher).not.toHaveBeenCalled();
+    }
+  });
+  it('sends an extension request only to the Claude API with the saved key, and never returns the key', async () => {
+    extensionPage({ assistantApiKey: 'sk-ant-test-key', assistantModel: 'claude-opus-5-5' });
+    const status = await readAssistantStatus({ sourceMode: 'preview', workspaceId: 'w' });
+    expect(status).toMatchObject({ available: true, state: 'ready', provider: 'anthropic', model: 'claude-opus-5-5', imagesAllowed: false, liveEcr: false });
+    expect(JSON.stringify(status)).not.toContain('sk-ant-test-key');
+    const fetcher = claude(wirePlan), current = proposal();
+    const result = await requestAssistantPlan(current, 'Raise the bracket 5 mm', {}, fetcher);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    const [url, options] = fetcher.mock.calls[0];
+    expect(url).toBe('https://api.anthropic.com/v1/messages');
+    expect(options).toMatchObject({ method: 'POST', credentials: 'omit', redirect: 'error' });
+    expect(options!.headers).toMatchObject({ 'x-api-key': 'sk-ant-test-key', 'anthropic-dangerous-direct-browser-access': 'true' });
+    const sent = JSON.parse(options!.body as string);
+    expect(sent.model).toBe('claude-opus-5-5');
+    expect(options!.body).not.toContain('sk-ant-test-key');
+    expect(result).toMatchObject({ proposalId: current.id, proposalVersion: current.version, sourceKey: current.sourceKey, summary: wirePlan.summary });
+    expect(JSON.stringify(result)).not.toContain('sk-ant-test-key');
+    expect(applyAssistantPlan(createHistory(current), result).present.nodes[0].position).toEqual([0, 0, 5]);
+  });
+  it('reports a rejected key, a refusal and an unsupported plan without changing the proposal', async () => {
+    extensionPage({ assistantApiKey: 'sk-ant-test-key' });
+    await expect(requestAssistantPlan(proposal(), 'Move', {}, claude(wirePlan, { status: 401 }))).rejects.toMatchObject({ code: 'KEY_REJECTED', message: expect.stringContaining('rejected the saved API key') });
+    await expect(requestAssistantPlan(proposal(), 'Move', {}, claude(wirePlan, { stop_reason: 'refusal' }))).rejects.toMatchObject({ code: 'REFUSED' });
+    await expect(requestAssistantPlan(proposal(), 'Move', {}, claude({ ...wirePlan, commands: [{ type: 'run', code: 'alert(1)' }] }))).rejects.toMatchObject({ code: 'INVALID_PLAN' });
+    await expect(requestAssistantPlan(proposal(), 'Move', {}, claude({ ...wirePlan, commands: [{ type: 'transform', nodeId: 'not-in-scene', position: [0, 0, 5] }] }))).rejects.toMatchObject({ code: 'INVALID_PLAN' });
+  });
+  it('does not attach an image unless image sharing is turned on in the options', async () => {
+    extensionPage({ assistantApiKey: 'sk-ant-test-key' });
+    const image = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+    const fetcher = claude(wirePlan);
+    await expect(requestAssistantPlan(proposal(), 'Move', { image, imageContext: { kind: 'model', camera: { position: [1, 1, 1], target: [0, 0, 0] } } }, fetcher)).rejects.toMatchObject({ code: 'FORBIDDEN', message: expect.stringContaining('Image sharing is turned off') });
     expect(fetcher).not.toHaveBeenCalled();
   });
   it('handles static hosting as unconfigured without a pretend AI response', async () => {

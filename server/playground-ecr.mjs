@@ -4,7 +4,7 @@
  * Requires a durable journal and provider-enforced idempotency before enabling.
  */
 import { createHash } from 'node:crypto';
-import { abortable } from './playground-provider.mjs';
+import { abortable } from '../shared/playground-provider.mjs';
 
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const text = (value, maximum = 512) => typeof value === 'string' && value.trim().length > 0 && value.length <= maximum && !/[\u0000-\u001f\u007f]/.test(value);

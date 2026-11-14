@@ -116,7 +116,7 @@ npm run build:extension
 3. Open the extension toolbar and confirm the bundled viewer runs at a `chrome-extension://` origin. Confirm version **0.8.0** in extension details.
 4. Open Options, then **Local runtime checks**. Run the checks and retain the report with its execution surface, graphics mode and package version.
 5. Repeat the scene, markup, document and ECR walkthrough above in that installed tab. Verify packaged workers, fonts and WASM load without a runtime CDN.
-6. Verify the assistant reports its unavailable extension transport. Do not put an API key in extension settings or weaken the package CSP to make that message disappear.
+6. With no key saved, verify the assistant says to add a Claude API key in the options and that no request leaves the browser (DevTools Network). Then, only with a key you are authorized to use: save it under **Connect Claude**, use **Test connection**, reopen the Playground, ask for a small change, review and apply the plan, and confirm the only outside host contacted is `api.anthropic.com`. Remove the key afterwards. Never commit a key or paste it into a report.
 7. After a rebuild, reload the extension card and reopen/reload its viewer tabs before recording results.
 
 The computer running Chrome must have access to the generated package folder; a path on a remote build machine is not automatically available locally. If installation or the approved browser workflow is blocked, record the restriction and leave the gate pending. Do not claim that a hosted test or static package check installed the extension.

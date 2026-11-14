@@ -2,6 +2,7 @@ import type { CameraState, PlaygroundCommand, Proposal, ProposalHistory, Proposa
 import { applyCommands, validateCommands, validateProposal } from './state';
 import { discardResponse, readBoundedJson, withAbort } from '../integrations/responseBody';
 import { invalidateViewerSession } from '../integrations/protectedContent';
+import { ExtensionAssistantFailure, isExtensionPage, proposeFromExtension, readExtensionAssistantSettings } from './extension-assistant';
 
 export interface AssistantStatus {
   configured: boolean;
@@ -48,8 +49,14 @@ export class AssistantError extends Error {
   constructor(message: string, readonly code = 'UNAVAILABLE') { super(message); }
 }
 const PREFIX = '/api/viewer/v1/playground/';
-const extension = () => typeof location !== 'undefined' && location.protocol === 'chrome-extension:';
-const unavailable = (state: 'extension' | 'unconfigured' = 'unconfigured'): AssistantStatus => ({ configured: false, available: false, state, imagesAllowed: false, liveEcr: false, message: state === 'extension' ? 'AI needs the authorized hosted viewer connection. Local Playground tools work in this Chrome extension.' : 'AI is not connected. Drawing, editing, comparison and Preview ECR tools work locally.' });
+const extension = isExtensionPage;
+const unavailable = (state: 'extension' | 'unconfigured' = 'unconfigured'): AssistantStatus => ({ configured: false, available: false, state, imagesAllowed: false, liveEcr: false, message: state === 'extension' ? 'Add your Claude API key in the extension options to use the assistant. Local Playground tools work without it.' : 'AI is not connected. Drawing, editing, comparison and Preview ECR tools work locally.' });
+/** The packaged extension has no server: it calls Claude directly with the user's saved key. */
+async function extensionStatus(): Promise<AssistantStatus> {
+  const settings = await readExtensionAssistantSettings();
+  if (!settings) return unavailable('extension');
+  return { configured: true, available: true, state: 'ready', provider: 'anthropic', model: settings.model, imagesAllowed: settings.shareImages, liveEcr: false, message: 'Requests go from this browser directly to Anthropic using the API key saved in the extension options, and are billed to that key.' };
+}
 const string = (value: unknown, max = 4000): value is string => typeof value === 'string' && value.length > 0 && value.length <= max;
 const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
 const only = (value: Record<string, unknown>, allowed: string[]) => Object.keys(value).every(key => allowed.includes(key));
@@ -89,7 +96,7 @@ async function readService(path: string, options: { signal?: AbortSignal; connec
 }
 
 export async function readAssistantStatus(context: Pick<ProposalContext, 'sourceMode' | 'workspaceId'> & { connectionId?: string }, signal?: AbortSignal, fetcher?: typeof fetch): Promise<AssistantStatus> {
-  if (extension()) return unavailable('extension');
+  if (extension()) return extensionStatus();
   try {
     const params = new URLSearchParams({ sourceMode: context.sourceMode, workspaceId: context.workspaceId });
     const value = await readService(`status?${params}`, { signal, connectionId: context.connectionId, fetcher });
@@ -138,6 +145,20 @@ export async function requestAssistantPlan(proposal: Proposal, prompt: string, o
   }
   const body = JSON.stringify({ proposalId: current.id, proposalVersion: current.version, sourceKey: current.sourceKey, context: current.context, baseline: current.baseline.map(({ sourceBinding: _binding, ...node }) => node), nodes: current.nodes.map(({ sourceBinding: _binding, ...node }) => node), annotations: current.annotations, prompt: prompt.trim(), ...(options.selectedId ? { selectedId: options.selectedId } : {}), ...(options.annotationIds ? { annotationIds: options.annotationIds } : {}), ...(options.image ? { image: options.image, imageContext } : {}) });
   if (new TextEncoder().encode(body).length > 4 * 1024 * 1024) throw new AssistantError('This assistant request is too large. Use a smaller image or fewer annotations.', 'TOO_LARGE');
+  if (extension()) {
+    const settings = await readExtensionAssistantSettings();
+    if (!settings) throw new AssistantError(unavailable('extension').message, 'UNCONFIGURED');
+    const timeout = new AbortController();
+    const signal = options.signal ? AbortSignal.any([options.signal, timeout.signal]) : timeout.signal;
+    const timer = setTimeout(() => timeout.abort(), 95_000);
+    try { return validateAssistantPlan(await proposeFromExtension(JSON.parse(body), settings, { signal, fetcher }), current); }
+    catch (error) {
+      if (options.signal?.aborted) throw options.signal.reason ?? new DOMException('Aborted', 'AbortError');
+      if (timeout.signal.aborted) throw new AssistantError('The assistant request timed out. Your proposal is unchanged.', 'TIMEOUT');
+      if (error instanceof ExtensionAssistantFailure) throw new AssistantError(error.message, error.code);
+      throw error;
+    } finally { clearTimeout(timer); }
+  }
   return validateAssistantPlan(await readService('propose', { body, signal: options.signal, connectionId: options.connectionId, fetcher }), current);
 }
 

@@ -14,7 +14,7 @@ Choose **Playground** next to Documents, 3D and Together. It opens the placed co
 
 Draw arrows, rectangles, ellipses, freehand marks, text labels and pins on the model or a PDF page. The camera stays held while drawing. Source-local anchors follow rigid component movement when the geometry still matches; view-only marks retain their camera and scene context. A hole change invalidates an old geometry anchor instead of silently moving its meaning. **Capture intent** preserves the image, original markup text, exact source and proposal version even if you later edit or delete that markup. PDF marks retain the exact file revision, edition, hash and page. Word remains readable and searchable; Playground drawing overlays currently apply to PDFs.
 
-The assistant connection is optional. Local manual tools and the Preview ECR flow work without an AI account. An authorized local development gateway can send typed or dictated instructions, selected scene data and an explicitly attached view to a configured model, then return a bounded suggestion for review. The installed Chrome package intentionally has **no AI transport** under its current connection policy. It contains no provider key. See [AI and Arena boundaries](docs/playground-ai.md) for configuration and the remaining extension transport work.
+The assistant connection is optional. Local manual tools and the Preview ECR flow work without an AI account. An authorized local development gateway can send typed or dictated instructions, selected scene data and an explicitly attached view to a configured model, then return a bounded suggestion for review. The installed Chrome package contains no provider key. A user can save their own Claude API key in the extension options, after which the Playground calls the Claude API directly from the browser. See [AI and Arena boundaries](docs/playground-ai.md) for what is stored, what is sent, and the limits.
 
 ### Create an ECR: the current six-step flow
 
@@ -144,7 +144,7 @@ Document-first sessions defer the 3D engine until a model is opened and the Word
 | Playground proposals | Separate source baseline and proposed web 3D representation, occurrence-level transforms, parameterized concepts, original/proposed/overlay, bounded history, exact-source draft export/import |
 | Playground design intent | Model/PDF drawing tools, geometry/camera-aware anchors, frozen intent captures, source-bound reference documents, and editable text or browser dictation |
 | Preview ECR preparation | Description dialog, affected-item selection, actual rendered images, local DOCX report, manifest/ZIP export and an explicit simulated receipt; no live Arena write |
-| Optional Playground AI | Server-only provider adapter, explicit image sharing, typed bounded commands, source/version guards, cancellation and user-reviewed application; installed-extension transport remains unavailable |
+| Optional Playground AI | Typed bounded commands, source/version guards, cancellation, explicit image sharing and user-reviewed application. In the installed extension it calls the Claude API directly with the user's own key saved in the options; in local web development it can use the server gateway. No live request has been verified with a real key |
 | Arena MCP integration | Server-only MCP SDK client, OAuth discovery/PKCE runtime, per-user session bridge, protected exact-source file delivery, schema/BOM/revision/attachment/supplier bindings, live launch loading, access-change clearing, and a Chrome launch extension; verified vendor mappings and production configuration remain required |
 
 ## Included test assembly
@@ -188,7 +188,8 @@ The repository includes nine part/revision STEP files, two complete assembly STE
 | `src/launch-context.ts` and `src/components/FileNavigator.tsx` | Exact document/model launch resolution and source navigation |
 | `src/data/reviewStore.ts` and `src/view-state.ts` | Versioned local review persistence and saved-view validation |
 | `src/playground/` | Proposal state/history, incremental Three.js scene, concept geometry, source-bound markups, reference documents, assistant client, local draft storage and ECR report/dialog |
-| `server/playground*.mjs` | Optional authenticated AI gateway and a separate unmounted ECR orchestration contract for future verified Arena write bindings |
+| `server/playground*.mjs` | Optional development AI gateway and a separate unmounted ECR orchestration contract for future verified Arena write bindings |
+| `shared/playground-*.mjs` | Assistant request/plan contract and the Claude Messages adapter, used unchanged by the extension page and the server gateway |
 | `src/App.tsx` | Workspace orchestration and user interface |
 | `extension/` and `scripts/build-extension.mjs` | Manifest V3 local viewer packaging, exact-context Arena launch bridge, optional click handling, and package validation |
 | `scripts/generate-fixtures.py` and `public/fixtures/` | Reproducible synthetic source assets and conversion metadata |
@@ -238,7 +239,7 @@ The Chrome extension's toolbar opens the packaged local viewer. Live Arena launc
 | Playground scope | Visual mesh/primitive proposals, not CAD authoring, automatic drawing reconstruction, physical simulation, manufacturing validation or source-hole editing. PDF page drawing is implemented; a Word drawing overlay is not. The AI interpretation path is optional and has not been tested against a live provider. |
 | Playground capacity | Up to 2,000 nodes, 250 markups, 512 points per markup and 40 history steps; source geometry retains its local import limits and 96 MiB engine geometry budget. Proposal storage/import is bounded to 4 MiB. These are application bounds, not measured capacity promises. |
 | Playground persistence and captures | Preview drafts are local; live drafts, captured intent images and preview ECR receipts are session-only. Source delivery URLs/credentials and original file bytes are excluded from proposal exports. ECR captures are limited to three images of up to 2 MiB each; the review payload is capped at 12 MiB. |
-| Assistant and voice | Local web development can use an explicitly configured server-side AI gateway. The installed extension has no external AI transport. Browser dictation may use the browser vendor's speech service and is not guaranteed offline; it inserts editable text and never submits a prompt or ECR itself. |
+| Assistant and voice | The installed extension can call the Claude API with a key the user saves in its options; the key is stored unencrypted in that Chrome profile and usage is billed to it. Local web development can use the server-side gateway instead. Neither path has been exercised against the live API. Browser dictation may use the browser vendor's speech service and is not guaranteed offline. |
 | PLM workflow | ECR creation is simulated: the app prepares a local Word report, images, manifest and ZIP. It does not create an Arena request, write a hidden field, attach files to Arena or submit an approval. Live writes need verified tools, user permissions, durable retry handling and record/URL readback. |
 
 See [AGENTS.md](AGENTS.md) for development conventions. No Arena credentials, API session tokens, or customer files belong in this repository or client bundle.

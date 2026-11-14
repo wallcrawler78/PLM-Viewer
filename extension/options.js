@@ -49,3 +49,58 @@ byId('runtime-checks').addEventListener('click', async () => {
     await chrome.tabs.create({ url: target.href });
   } catch { byId('notice').textContent = 'The local runtime check page could not be opened. Reload the extension and try again.'; }
 });
+
+// Playground assistant. The key stays in chrome.storage.local, which the service worker
+// restricts to extension pages; it is never echoed back into the form.
+const ASSISTANT_DEFAULT_MODEL = 'claude-fable-5-2';
+const assistantNote = text => { byId('notice').textContent = text; };
+async function showAssistant() {
+  const stored = await chrome.storage.local.get(['assistantApiKey', 'assistantModel', 'assistantShareImages']);
+  const saved = typeof stored.assistantApiKey === 'string' && stored.assistantApiKey.length > 0;
+  byId('assistantApiKey').value = '';
+  byId('assistantApiKey').placeholder = saved ? `Saved key ending ${stored.assistantApiKey.slice(-4)} — enter a new key to replace it` : 'sk-ant-…';
+  byId('assistantModel').value = stored.assistantModel || '';
+  byId('assistantShareImages').checked = stored.assistantShareImages === true;
+  byId('assistantState').textContent = saved ? 'Key saved' : 'Not connected';
+  byId('assistantRemove').disabled = !saved; byId('assistantTest').disabled = !saved;
+  return stored;
+}
+function assistantInput() {
+  const apiKey = byId('assistantApiKey').value.trim(), model = byId('assistantModel').value.trim() || ASSISTANT_DEFAULT_MODEL;
+  if (apiKey && (apiKey.length > 512 || /[^\x21-\x7e]/.test(apiKey))) throw new Error('Enter the API key exactly as issued, without spaces or line breaks.');
+  if (!/^claude-[a-z0-9-]{1,80}$/.test(model)) throw new Error('Enter a Claude model ID such as claude-fable-5-2.');
+  return { apiKey, model, assistantShareImages: byId('assistantShareImages').checked };
+}
+byId('assistant').addEventListener('submit', async event => {
+  event.preventDefault();
+  try {
+    const { apiKey, model, assistantShareImages } = assistantInput();
+    const stored = await chrome.storage.local.get(['assistantApiKey']);
+    if (!apiKey && !stored.assistantApiKey) throw new Error('Enter a Claude API key to connect the assistant.');
+    await chrome.storage.local.set({ ...(apiKey ? { assistantApiKey: apiKey } : {}), assistantModel: model, assistantShareImages });
+    await showAssistant(); assistantNote('Assistant settings saved. Open the Playground and choose Check connection.');
+  } catch (error) { assistantNote(error.message); }
+});
+byId('assistantRemove').addEventListener('click', async () => {
+  await chrome.storage.local.remove(['assistantApiKey']);
+  await showAssistant(); assistantNote('The saved API key was removed from this browser. Revoke it in the Anthropic Console if it is no longer needed.');
+});
+// One fixed read-only request that returns no model output and costs nothing.
+byId('assistantTest').addEventListener('click', async () => {
+  const button = byId('assistantTest'); button.disabled = true; assistantNote('Checking the saved key…');
+  try {
+    const stored = await chrome.storage.local.get(['assistantApiKey', 'assistantModel']);
+    const model = stored.assistantModel || ASSISTANT_DEFAULT_MODEL;
+    if (!stored.assistantApiKey || !/^claude-[a-z0-9-]{1,80}$/.test(model)) throw new Error('Save a Claude API key first.');
+    const response = await fetch(`https://api.anthropic.com/v1/models/${model}`, { method: 'GET', credentials: 'omit', cache: 'no-store', redirect: 'error', referrerPolicy: 'no-referrer', signal: AbortSignal.timeout(15000),
+      headers: { 'x-api-key': stored.assistantApiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' } });
+    void response.body?.cancel().catch(() => {});
+    assistantNote(response.ok ? `Connected. This key can use ${model}.`
+      : response.status === 401 || response.status === 403 ? 'Anthropic rejected this API key. Check that it was copied completely and is still active.'
+      : response.status === 404 ? `This key works, but the model ID ${model} was not found for it. Check the model ID.`
+      : response.status === 429 ? 'Anthropic is rate limiting this key. Try again shortly.'
+      : `Anthropic returned an unexpected status (${response.status}). Try again later.`);
+  } catch (error) { assistantNote(error.name === 'TimeoutError' || error instanceof TypeError ? 'Anthropic could not be reached from this browser. Check your network connection.' : error.message); }
+  finally { await showAssistant(); }
+});
+await showAssistant();

@@ -25,7 +25,10 @@ async function boundedResponse(response, signal) {
       if (size > ASSISTANT_LIMITS.responseBytes) throw new PlaygroundError('INVALID_PLAN');
       chunks.push(value);
     }
-    return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks)));
+    const bytes = new Uint8Array(size);
+    let offset = 0;
+    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
+    return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
   } finally {
     if (!complete) void reader.cancel().catch(() => {});
     reader.releaseLock();
@@ -42,9 +45,11 @@ export function abortable(work, signal) {
   });
 }
 
-/** Server-only key and a fixed official endpoint. Never accept an API URL from a browser. */
-export function createAnthropicAssistant({ apiKey, model = 'claude-fable-5-2', fetcher = globalThis.fetch }) {
-  if (typeof apiKey !== 'string' || !apiKey.trim() || /[\r\n]/.test(apiKey)) throw new Error('Configure a server-only Playground Anthropic API key.');
+/** One fixed official endpoint; the API URL is never configurable. The key comes from the
+ * caller: a server environment variable, or the user's own key saved in the extension options.
+ * `directBrowser` adds the header Anthropic requires for requests sent from a browser page. */
+export function createAnthropicAssistant({ apiKey, model = 'claude-fable-5-2', fetcher = (...args) => globalThis.fetch(...args), directBrowser = false }) {
+  if (typeof apiKey !== 'string' || !apiKey.trim() || apiKey !== apiKey.trim() || apiKey.length > 512 || /[^\x21-\x7e]/.test(apiKey)) throw new Error('Configure a valid Playground Anthropic API key.');
   if (typeof model !== 'string' || !/^claude-[a-z0-9-]{1,80}$/.test(model)) throw new Error('Configure an explicit supported Claude API model ID.');
   return {
     provider: 'anthropic', model,
@@ -59,12 +64,14 @@ export function createAnthropicAssistant({ apiKey, model = 'claude-fable-5-2', f
       try {
         response = await abortable(Promise.resolve(fetcher('https://api.anthropic.com/v1/messages', {
           method: 'POST', redirect: 'error', signal,
-          headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+          headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', ...(directBrowser ? { 'anthropic-dangerous-direct-browser-access': 'true' } : {}) },
+          ...(directBrowser ? { credentials: 'omit', cache: 'no-store', referrerPolicy: 'no-referrer' } : {}),
           body: JSON.stringify({ model, max_tokens: 8192, system: SYSTEM, messages: [{ role: 'user', content }], output_config: { format: { type: 'json_schema', schema: ASSISTANT_PLAN_SCHEMA } } }),
         })).then(result => { if (signal?.aborted) { void result.body?.cancel().catch(() => {}); signal.throwIfAborted(); } return result; }), signal);
-        if (!response.ok) throw new PlaygroundError(response.status === 429 ? 'BUSY' : 'UPSTREAM_ERROR');
+        if (!response.ok) throw new PlaygroundError(response.status === 429 || response.status === 529 ? 'BUSY' : [401, 403].includes(response.status) ? 'KEY_REJECTED' : 'UPSTREAM_ERROR');
         if (!(response.headers.get('content-type') ?? '').includes('application/json')) throw new PlaygroundError('INVALID_PLAN');
         const envelope = await boundedResponse(response, signal);
+        if (envelope.stop_reason === 'refusal') throw new PlaygroundError('REFUSED');
         if (envelope.stop_reason !== 'end_turn' || !Array.isArray(envelope.content)) throw new PlaygroundError('INVALID_PLAN');
         const blocks = envelope.content.filter(block => block.type === 'text');
         if (blocks.length !== 1 || typeof blocks[0].text !== 'string') throw new PlaygroundError('INVALID_PLAN');
