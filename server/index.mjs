@@ -4,6 +4,7 @@ import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
 import { ViewerError, identityText, safeError } from './errors.mjs';
 import { validateContentIdentity, validateContentResult } from './content.mjs';
+import { handlePlaygroundRequest, loadConfiguredPlayground } from './playground.mjs';
 
 const PREFIX = '/api/viewer/v1/';
 const AUTH_PREFIX = `${PREFIX}auth/`;
@@ -55,7 +56,7 @@ function parseRequest(request) {
   return { route, query, expectedConnection: header };
 }
 
-export function createViewerServer(provider = null) {
+export function createViewerServer(provider = null, playground = null) {
   return createServer(async (request, response) => {
     response.setHeader('Cache-Control', 'no-store');
     response.setHeader('Pragma', 'no-cache');
@@ -72,6 +73,7 @@ export function createViewerServer(provider = null) {
     response.once?.('close', closed);
     try {
       const requestUrl = parseRequestUrl(request);
+      if (await handlePlaygroundRequest(request, response, { url: requestUrl, provider, gateway: playground, signal: controller.signal })) return;
       // OAuth is a separately configured application connection. It must remain
       // reachable while MCP operation bindings are still intentionally unset.
       if (requestUrl.pathname.startsWith(AUTH_PREFIX)) {
@@ -155,5 +157,5 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   const provider = await loadConfiguredProvider();
   const port = Number(process.env.VIEWER_API_PORT ?? '4100');
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid VIEWER_API_PORT.');
-  createViewerServer(provider).listen(port, '127.0.0.1', () => console.log(`Viewer service listening on 127.0.0.1:${port}; Arena ${provider?.configured !== false && provider ? 'provider installed' : 'not configured'}.`));
+  createViewerServer(provider, loadConfiguredPlayground()).listen(port, '127.0.0.1', () => console.log(`Viewer service listening on 127.0.0.1:${port}; Arena ${provider?.configured !== false && provider ? 'provider installed' : 'not configured'}.`));
 }

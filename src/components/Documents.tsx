@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useReducer, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { getDocument, OPS, TextLayer } from 'pdfjs-dist';
 import type { PDFDocumentProxy, PDFPageProxy, RenderTask } from 'pdfjs-dist';
 import { AlertCircle, ChevronLeft, ChevronRight, FileText, LoaderCircle, Minus, Plus, Search, X } from 'lucide-react';
@@ -40,6 +41,8 @@ export type DocumentSuggestionAnchor = Omit<DocumentAnchor, 'x' | 'y'> & { x?: n
 export type DocumentSourcePresentation = 'item' | 'local';
 interface Props {
   file: DocumentFile;
+  /** Packaged drawing tools can attach a source-page overlay without replacing the reader. */
+  pageOverlay?: (page: number) => ReactNode;
   sourcePresentation?: DocumentSourcePresentation;
   markMode?: boolean;
   onAnchor?: (anchor: DocumentAnchor) => void;
@@ -86,7 +89,7 @@ export function FileView(props: Props) {
   return <FileContent key={`${documentSourceKey(props.file)}:${attempt}`} {...props} onRetry={() => setAttempt(value => value + 1)} />;
 }
 
-function FileContent({ file, sourcePresentation = 'item', markMode, onAnchor, onText, onBlocks, onExtraction, onPdfRaster, highlights = [], focusBlock, navigation, onNavigate, focusAnchor: requestedFocusAnchor, compact, anchors: requestedAnchors = [], onAnchorSelect, onRetry }: Props & { onRetry: () => void }) {
+function FileContent({ file, pageOverlay, sourcePresentation = 'item', markMode, onAnchor, onText, onBlocks, onExtraction, onPdfRaster, highlights = [], focusBlock, navigation, onNavigate, focusAnchor: requestedFocusAnchor, compact, anchors: requestedAnchors = [], onAnchorSelect, onRetry }: Props & { onRetry: () => void }) {
   const focusAnchor = matchesDocumentAnchor(requestedFocusAnchor, file) ? requestedFocusAnchor : null;
   const anchors = requestedAnchors.filter(pin => matchesDocumentAnchor(pin.anchor, file));
   // docx-preview emits document-specific global CSS. A distinct prefix prevents
@@ -624,6 +627,7 @@ function FileContent({ file, sourcePresentation = 'item', markMode, onAnchor, on
       {file.kind === 'pdf' && <div className={`pdf-page ${markMode ? 'mark-mode' : ''}`} style={{ width: size.width, height: size.height, visibility: ready ? 'visible' : 'hidden' }} onClick={anchor}>
         <canvas ref={canvas} />
         <div className="textLayer" ref={textContainer} />
+        {ready && pageOverlay?.(page)}
         {focusAnchor?.fileId === file.id && focusAnchor.page === page && focusAnchor.point !== false && <span className="document-pin" style={{ left: `${focusAnchor.x * 100}%`, top: `${focusAnchor.y * 100}%` }}>●</span>}
         {anchors.filter(pin => pin.anchor.page === page).map(pin => <button className="document-comment-pin" key={pin.id} aria-label={`Open document comment ${pin.label}`} style={{ left: `${pin.anchor.x * 100}%`, top: `${pin.anchor.y * 100}%` }} onClick={event => { event.stopPropagation(); onAnchorSelect?.(pin.id); }}>{pin.label}</button>)}
       </div>}

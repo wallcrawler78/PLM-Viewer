@@ -14,7 +14,9 @@ export default defineConfig(({ mode }) => ({
       const serviceModule = pathToFileURL(resolve('server/index.mjs')).href;
       const { createViewerServer, loadConfiguredProvider } = await import(serviceModule);
       const provider = await loadConfiguredProvider(process.env.ARENA_PROVIDER_MODULE ?? env.ARENA_PROVIDER_MODULE);
-      const service = createViewerServer(provider);
+      const { loadConfiguredPlayground } = await import(pathToFileURL(resolve('server/playground.mjs')).href);
+      const playgroundEnv = { ...loadEnv(mode, process.cwd(), 'PLAYGROUND_'), ...process.env };
+      const service = createViewerServer(provider, loadConfiguredPlayground(playgroundEnv));
       server.middlewares.use((request, response, next) => {
         if (request.url?.startsWith('/api/viewer/v1/')) service.emit('request', request, response);
         else next();

@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Review Studio \u00b7 Universal Viewer",
   "description": "Review STEP models and PDF/Word documents in a packaged local workspace, with an optional Arena launch connection.",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "permissions": [
     "contextMenus",
     "storage"
