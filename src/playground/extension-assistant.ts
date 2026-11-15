@@ -8,7 +8,7 @@ import { createAnthropicAssistant } from '../../shared/playground-provider.mjs';
 export const ASSISTANT_SETTING_KEYS = ['assistantApiKey', 'assistantModel', 'assistantShareImages'] as const;
 export const DEFAULT_ASSISTANT_MODEL = 'claude-fable-5-2';
 export interface ExtensionAssistantSettings { apiKey: string; model: string; shareImages: boolean; }
-interface StorageArea { get(keys: readonly string[]): Promise<Record<string, unknown>>; }
+interface StorageArea { get(keys: readonly string[]): Promise<Record<string, unknown>>; set?(items: Record<string, unknown>): Promise<void>; }
 interface ExtensionRuntime { storage?: { local?: StorageArea }; runtime?: { openOptionsPage?: () => Promise<void> | void }; }
 const runtime = (): ExtensionRuntime | undefined => (globalThis as { chrome?: ExtensionRuntime }).chrome;
 
@@ -71,4 +71,20 @@ export async function draftEcrFromExtension(body: Record<string, unknown>, setti
     if (options.signal?.aborted) throw error;
     throw failure(error);
   }
+}
+
+/** Whether a suggestion is applied as soon as it arrives (the default) or waits for review.
+ * Stored with the other assistant settings in the extension, or in this browser for a web build. */
+const REVIEW_KEY = 'assistantReviewBeforeApply', WEB_REVIEW_KEY = 'review-studio.playground.reviewBeforeApply';
+export async function readReviewBeforeApply(storage: StorageArea | undefined = runtime()?.storage?.local): Promise<boolean> {
+  try {
+    if (storage) return (await storage.get([REVIEW_KEY]))[REVIEW_KEY] === true;
+    return globalThis.localStorage?.getItem(WEB_REVIEW_KEY) === 'true';
+  } catch { return false; }
+}
+export async function writeReviewBeforeApply(value: boolean, storage: StorageArea | undefined = runtime()?.storage?.local): Promise<void> {
+  try {
+    if (storage?.set) await storage.set({ [REVIEW_KEY]: value });
+    else globalThis.localStorage?.setItem(WEB_REVIEW_KEY, String(value));
+  } catch { /* The choice still holds for this session. */ }
 }

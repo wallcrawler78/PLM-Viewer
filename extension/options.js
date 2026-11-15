@@ -55,12 +55,13 @@ byId('runtime-checks').addEventListener('click', async () => {
 const ASSISTANT_DEFAULT_MODEL = 'claude-fable-5-2';
 const assistantNote = text => { byId('notice').textContent = text; };
 async function showAssistant() {
-  const stored = await chrome.storage.local.get(['assistantApiKey', 'assistantModel', 'assistantShareImages']);
+  const stored = await chrome.storage.local.get(['assistantApiKey', 'assistantModel', 'assistantShareImages', 'assistantReviewBeforeApply']);
   const saved = typeof stored.assistantApiKey === 'string' && stored.assistantApiKey.length > 0;
   byId('assistantApiKey').value = '';
   byId('assistantApiKey').placeholder = saved ? `Saved key ending ${stored.assistantApiKey.slice(-4)} — enter a new key to replace it` : 'sk-ant-…';
   byId('assistantModel').value = stored.assistantModel || '';
   byId('assistantShareImages').checked = stored.assistantShareImages === true;
+  byId('assistantReviewBeforeApply').checked = stored.assistantReviewBeforeApply === true;
   byId('assistantState').textContent = saved ? 'Key saved' : 'Not connected';
   byId('assistantRemove').disabled = !saved; byId('assistantTest').disabled = !saved;
   return stored;
@@ -69,15 +70,15 @@ function assistantInput() {
   const apiKey = byId('assistantApiKey').value.trim(), model = byId('assistantModel').value.trim() || ASSISTANT_DEFAULT_MODEL;
   if (apiKey && (apiKey.length > 512 || /[^\x21-\x7e]/.test(apiKey))) throw new Error('Enter the API key exactly as issued, without spaces or line breaks.');
   if (!/^claude-[a-z0-9-]{1,80}$/.test(model)) throw new Error('Enter a Claude model ID such as claude-fable-5-2.');
-  return { apiKey, model, assistantShareImages: byId('assistantShareImages').checked };
+  return { apiKey, model, assistantShareImages: byId('assistantShareImages').checked, assistantReviewBeforeApply: byId('assistantReviewBeforeApply').checked };
 }
 byId('assistant').addEventListener('submit', async event => {
   event.preventDefault();
   try {
-    const { apiKey, model, assistantShareImages } = assistantInput();
+    const { apiKey, model, assistantShareImages, assistantReviewBeforeApply } = assistantInput();
     const stored = await chrome.storage.local.get(['assistantApiKey']);
     if (!apiKey && !stored.assistantApiKey) throw new Error('Enter a Claude API key to connect the assistant.');
-    await chrome.storage.local.set({ ...(apiKey ? { assistantApiKey: apiKey } : {}), assistantModel: model, assistantShareImages });
+    await chrome.storage.local.set({ ...(apiKey ? { assistantApiKey: apiKey } : {}), assistantModel: model, assistantShareImages, assistantReviewBeforeApply });
     await showAssistant(); assistantNote('Assistant settings saved. Open the Playground and choose Check connection.');
   } catch (error) { assistantNote(error.message); }
 });

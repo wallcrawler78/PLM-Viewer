@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { applyAssistantPlan, readAssistantStatus, requestAssistantPlan, requestEcrDraft, validateAssistantPlan } from '../src/playground/assistant';
 import { applyCommands, createHistory, createProposal } from '../src/playground/state';
+import { readReviewBeforeApply, writeReviewBeforeApply } from '../src/playground/extension-assistant';
 
 const proposal = () => createProposal({ workspaceId: 'w', snapshotId: 'snap', rootItemId: 'assembly', itemNumber: '100', name: 'Assembly', revision: 'A', sourceMode: 'preview' }, [{ id: 'occ-a', itemId: 'item-a', itemNumber: '100-1', revision: 'A', sourceHash: 'a'.repeat(64), name: 'Bracket', position: [0, 0, 0], color: '#999999' }]);
 const json = (data: unknown, headers: Record<string, string> = {}) => new Response(JSON.stringify(data), { headers: { 'content-type': 'application/json', ...headers } });
@@ -88,6 +89,20 @@ describe('Playground assistant client', () => {
     await expect(requestEcrDraft(moved, { title: 't' }, claude({ ...draft, script: 'alert(1)' }))).rejects.toMatchObject({ code: 'INVALID_PLAN' });
     vi.stubGlobal('location', { protocol: 'https:' });
     await expect(requestEcrDraft(moved, { title: 't' }, fetcher)).rejects.toMatchObject({ code: 'UNCONFIGURED' });
+  });
+  it('applies suggestions immediately by default and remembers a choice to review first', async () => {
+    const stored: Record<string, unknown> = {};
+    const storage = { get: async (keys: readonly string[]) => Object.fromEntries(keys.filter(key => key in stored).map(key => [key, stored[key]])), set: async (items: Record<string, unknown>) => { Object.assign(stored, items); } };
+    expect(await readReviewBeforeApply(storage)).toBe(false);
+    await writeReviewBeforeApply(true, storage);
+    expect(stored).toEqual({ assistantReviewBeforeApply: true });
+    expect(await readReviewBeforeApply(storage)).toBe(true);
+    await writeReviewBeforeApply(false, storage);
+    expect(await readReviewBeforeApply(storage)).toBe(false);
+    // Anything other than an explicit true means the default: apply immediately.
+    stored.assistantReviewBeforeApply = 'yes';
+    expect(await readReviewBeforeApply(storage)).toBe(false);
+    expect(await readReviewBeforeApply({ get: async () => { throw new Error('unavailable'); } })).toBe(false);
   });
   it('handles static hosting as unconfigured without a pretend AI response', async () => {
     const fetcher = vi.fn(async () => new Response('<html>Static viewer</html>', { headers: { 'content-type': 'text/html' } }));
