@@ -7,7 +7,8 @@ import { build as viteBuild } from 'vite';
 import { initSync, parse as parseModule } from 'es-module-lexer';
 import JSZip from 'jszip';
 
-const EXTENSION_FILES = ['manifest.json', 'background.js', 'launch-url.js', 'attachment-action.js', 'options.html', 'options.js', 'options.css', 'content-script.css'];
+const EXTENSION_ICONS = ['icons/icon-16.png', 'icons/icon-32.png', 'icons/icon-48.png', 'icons/icon-128.png'];
+const EXTENSION_FILES = ['manifest.json', 'background.js', 'launch-url.js', 'attachment-action.js', 'options.html', 'options.js', 'options.css', 'content-script.css', ...EXTENSION_ICONS];
 const DIST_EXCLUDED = new Set(['developer', 'server', '_headers', '_redirects']);
 const PACKAGE_DATE = new Date('2026-01-01T00:00:00Z');
 initSync();
@@ -105,6 +106,11 @@ export function validateExtensionPackage(files) {
   validateLocalPolicy(policy);
   validateRuntimeManifest(files, manifest.version);
   for (const name of [manifest.background.service_worker, manifest.options_page, ...(manifest.content_scripts ?? []).flatMap(script => [...(script.js ?? []), ...(script.css ?? [])])]) requireFile(name);
+  // Chrome and the Web Store need the declared toolbar and listing icons to be real packaged PNGs.
+  for (const size of ['16', '48', '128']) {
+    const icon = manifest.icons?.[size], bytes = icon && files.get(icon);
+    if (!bytes || bytes.length < 24 || bytes[0] !== 0x89 || bytes[1] !== 0x50 || bytes[2] !== 0x4e || bytes[3] !== 0x47 || bytes.readUInt32BE(16) !== Number(size) || bytes.readUInt32BE(20) !== Number(size)) throw new Error(`The extension needs a ${size} px PNG icon.`);
+  }
   if (JSON.stringify(manifest.host_permissions ?? []) !== JSON.stringify(['https://api.anthropic.com/*']) || manifest.optional_host_permissions) throw new Error('The viewer extension may reach only its packaged files and the Claude API host.');
   if (manifest.externally_connectable || manifest.permissions?.some(permission => ['downloads', 'cookies', 'debugger', 'webRequest', 'webRequestBlocking'].includes(permission))) throw new Error('Unexpected privileged capability in the viewer extension.');
   for (const [name, bytes] of files) {

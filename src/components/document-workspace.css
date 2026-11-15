@@ -29,7 +29,7 @@
 .document-page-field input::-webkit-inner-spin-button,.document-page-field input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 .document-control-divider{height:16px;border-left:1px solid #dce5eb;margin:0 5px}
 .document-find{display:flex;align-items:center;flex-wrap:wrap;column-gap:6px;row-gap:4px;min-height:43px;background:#fff;border-bottom:1px solid #dfe8ed;padding:6px 17px;flex-shrink:0;color:#7b94a0}
-.document-find input{min-width:0;flex:1;border:0;outline:none;background:transparent;color:#2e4f5e;font-size:12px;padding:5px 3px}
+.document-find:focus-within{outline:2px solid #1f7f86;outline-offset:1px}.document-find input{min-width:0;flex:1;border:0;outline:none;background:transparent;color:#2e4f5e;font-size:12px;padding:5px 3px}
 .document-find>span{order:1;flex-basis:100%;padding-left:20px;font-size:10px;color:#6c8190;white-space:normal;line-height:1.4}
 .document-find>span:empty{display:none}
 .document-find>.small{width:23px;height:24px;flex-shrink:0}

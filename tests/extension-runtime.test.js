@@ -108,6 +108,22 @@ describe('extension background boundary', () => {
     expect(Object.fromEntries(target.searchParams)).toEqual({ deployment: 'private', mode: 'arena', workspaceId: 'workspace', ...exact });
   });
 
+  it('takes context-menu source context only from Arena application pages and links', async () => {
+    const { chrome, listeners } = await background();
+    const arenaLink = 'https://app.bom.com/items/detail?itemId=item-1&revision=B';
+    await listeners.menu({ menuItemId: 'open-assembly-review', pageUrl: 'https://app.bom.com/home', linkUrl: arenaLink });
+    expect(chrome.tabs.create).toHaveBeenCalledTimes(1);
+    expect(new URL(chrome.tabs.create.mock.calls[0][0].url).searchParams.get('itemId')).toBe('item-1');
+    for (const info of [
+      { pageUrl: 'https://app.bom.com/home', linkUrl: 'https://evil.example/?itemId=item-1' },
+      { pageUrl: 'https://www.ptc.com/page?itemId=item-1' },
+      { pageUrl: 'https://evil.example/', linkUrl: arenaLink },
+    ]) await listeners.menu({ menuItemId: 'open-assembly-review', ...info });
+    expect(chrome.tabs.create).toHaveBeenCalledTimes(1);
+    expect(chrome.runtime.openOptionsPage).toHaveBeenCalledTimes(3);
+    expect(chrome.storage.local.set).toHaveBeenLastCalledWith({ launchNotice: expect.stringContaining('inside the Arena application') });
+  });
+
   it('rejects messages from other origins or stale settings without launching Preview', async () => {
     const { chrome, listeners } = await background({ ...settings, autoOpenAttachments: false });
     const action = recognizeAttachmentAction(link(), settings);

@@ -109,6 +109,20 @@ describe('local Playground persistence',()=>{
    const storage=memory(),store=new LocalProposalStore(storage),p=make(),key=proposalStorageKey(p.sourceKey);storage.setItem(key,'{broken');
    expect(()=>store.load(p)).toThrow(/invalid/);expect(()=>store.save(p,0)).toThrow(/invalid/);expect(store.readRaw(p)).toBe('{broken');
  });
+ it('resumes saving after a conflict or an unreadable record only through the explicit replace',()=>{
+   const storage=memory(),tabA=new LocalProposalStore(storage),tabB=new LocalProposalStore(storage),p=make(),key=proposalStorageKey(p.sourceKey);
+   tabA.save(p,0);
+   const fromB=applyCommands(createHistory(p),[{type:'transform',nodeId:'occ-1',position:[5,0,0]}]).present;tabB.save(fromB,1);
+   const fromA=applyCommands(createHistory(p),[{type:'transform',nodeId:'occ-1',position:[0,9,0]}]).present;
+   expect(()=>tabA.save(fromA,1)).toThrow(/Another tab/);expect(tabA.load(p).proposal?.nodes[0].position).toEqual([5,0,0]);
+   const revision=tabA.replace(fromA);expect(revision).toBe(3);expect(tabA.load(p).proposal?.nodes[0].position).toEqual([0,9,0]);
+   expect(tabA.save(fromA,revision)).toBe(4);
+   storage.setItem(key,'{broken');expect(()=>tabA.save(fromA,4)).toThrow(/invalid/);
+   expect(tabA.replace(fromA)).toBe(1);expect(tabA.load(p).proposal?.nodes[0].position).toEqual([0,9,0]);
+   // A draft for a different exact source is never written over this one.
+   const other=make();(other as {sourceKey:string}).sourceKey='not-this-source';
+   expect(()=>tabA.replace(other)).toThrow();
+ });
  it('retains the saved version and live draft on storage failure',()=>{
    const storage=memory(),p=make(),store=new LocalProposalStore(storage);store.save(p,0);
    const draft=applyCommands(createHistory(p),[{type:'transform',nodeId:'occ-1',position:[0,1,2]}]).present;

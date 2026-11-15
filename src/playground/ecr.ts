@@ -75,7 +75,9 @@ export interface EcrReceipt {
 export interface EcrAdapter { createDraft(review:EcrPackage,idempotencyKey?:string):Promise<EcrReceipt> }
 
 const cleanText=(value:unknown,label:string,max:number,allowEmpty=false):string=>{
-  if(typeof value!=='string'||value.length>max||(!allowEmpty&&!value.trim())||/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value)) throw new Error(`${label} is missing or too long.`);
+  if(typeof value!=='string'||(!allowEmpty&&!value.trim())) throw new Error(`${label} is missing.`);
+  if(value.length>max) throw new Error(`${label} is too long (${value.length.toLocaleString()} of ${max.toLocaleString()} characters).`);
+  if(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value)) throw new Error(`${label} contains a control character that cannot be saved. Retype or paste it as plain text.`);
   return value;
 };
 const filename=(value:unknown)=>{

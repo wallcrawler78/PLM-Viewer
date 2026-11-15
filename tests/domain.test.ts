@@ -1,3 +1,4 @@
+import { documentForItem } from '../src/domain';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import fixtureManifest from '../public/fixtures/manifest.json';
 import { PreviewAdapter } from '../src/data/previewAdapter';
@@ -176,6 +177,32 @@ describe('data validation', () => {
     const unnamed = structuredClone(snapshot); unnamed.parts[index].revision = '';
     expect(() => validateSnapshot(unnamed)).toThrow();
     expect(() => validateSnapshot(structuredClone(snapshot))).not.toThrow();
+  });
+  it('rejects attribute values that are not scalars and keeps zero, false, empty and null', async () => {
+    const snapshot = await new PreviewAdapter('precision', fixtureFetch()).loadBom('A');
+    const kept = structuredClone(snapshot); kept.occurrences[0].attributes = { a: 0, b: false, c: '', d: null };
+    expect(validateSnapshot(kept).occurrences[0].attributes).toEqual({ a: 0, b: false, c: '', d: null });
+    for (const bad of [{ nested: { value: 1 } }, { list: [1, 2] }, { number: NaN }, { number: Infinity }]) {
+      const line = structuredClone(snapshot); (line.occurrences[0] as { attributes: unknown }).attributes = bad;
+      expect(() => validateSnapshot(line), JSON.stringify(Object.keys(bad))).toThrow('Invalid attribute values for BOM line');
+      const item = structuredClone(snapshot); (item.parts[0] as { attributes: unknown }).attributes = bad;
+      expect(() => validateSnapshot(item)).toThrow('Invalid attribute values for item');
+    }
+  });
+  it('offers only a document of the exact item revision, never another revision of the same item', async () => {
+    const snapshot = await new PreviewAdapter('precision', fixtureFetch()).loadBom('B');
+    const base = snapshot.documents.find(file => file.itemId === 'base')!;
+    expect(documentForItem(snapshot, 'base', base.revision)?.id).toBe(base.id);
+    // A configuration can carry two revisions of one item; the older drawing must not stand in for the newer one.
+    const mixed = structuredClone(snapshot);
+    mixed.documents.unshift({ ...base, id: 'base-drawing-old', revision: 'OLD', sourceHash: 'c'.repeat(64) });
+    expect(documentForItem(mixed, 'base', base.revision)?.id).toBe(base.id);
+    expect(documentForItem(mixed, 'base', 'OLD')?.id).toBe('base-drawing-old');
+    expect(documentForItem(mixed, 'base', 'NOT-PRESENT')).toBeNull();
+    expect(documentForItem(mixed, 'base', undefined)).toBeNull();
+    const wordOnly = { documents: [{ ...base, kind: 'docx' as const }] };
+    expect(documentForItem(wordOnly, 'base', base.revision)?.kind).toBe('docx');
+    expect(documentForItem(wordOnly, 'base', base.revision, true)).toBeNull();
   });
   it('validates schema identity and safe resource protocols', () => {
     const duplicate = structuredClone(schemas.precision); duplicate.attributes.push(duplicate.attributes[0]);

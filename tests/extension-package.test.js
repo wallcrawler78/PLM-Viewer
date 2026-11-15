@@ -103,6 +103,17 @@ describe('complete extension artifact', () => {
     expect(() => validateExtensionPackage(missing)).toThrow('missing vendor/occt/NOTICE.txt');
   });
 
+  it('packages real icons at the sizes Chrome and the Web Store require', () => {
+    for (const size of [16, 32, 48, 128]) expect(files.get(`icons/icon-${size}.png`).readUInt32BE(16), String(size)).toBe(size);
+    const missing = new Map(files); missing.delete('icons/icon-128.png');
+    expect(() => validateExtensionPackage(missing)).toThrow('128 px PNG icon');
+    const wrong = new Map(files); wrong.set('icons/icon-48.png', files.get('icons/icon-16.png'));
+    expect(() => validateExtensionPackage(wrong)).toThrow('48 px PNG icon');
+    const undeclared = new Map(files), manifest = JSON.parse(undeclared.get('manifest.json')); delete manifest.icons;
+    undeclared.set('manifest.json', Buffer.from(JSON.stringify(manifest)));
+    expect(() => validateExtensionPackage(undeclared)).toThrow('PNG icon');
+  });
+
   it.each([[['https://api.anthropic.com/*', 'https://example.com/*']], [['<all_urls>']], [['https://*/*']], [[]]])('rejects any host access other than the Claude API: %j', hosts => {
     const invalid = new Map(files), manifest = JSON.parse(invalid.get('manifest.json'));
     manifest.host_permissions = hosts;
