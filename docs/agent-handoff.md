@@ -8,7 +8,7 @@ The public 0.7 import was commit `048746c37555c9f46ecb2f7144446aa4b91092ad`, ori
 
 | Check | 0.8 result |
 | --- | --- |
-| TypeScript and tests | `npm run check` passed: **704 tests in 59 test files**. |
+| TypeScript and tests | `npm run check` passed: **722 tests in 59 test files**. |
 | Application and Chrome build | `npm run build:extension` passed for 0.8.0; the build reported 282 packaged files, 6.76 MiB, with the local STEP/PDF assets. |
 | Generated Word report | The test report was rendered to three pages and all pages inspected; a table-row split was corrected and the report rerendered. This is artifact layout QA, not a Playground browser screenshot. |
 | Browser visual/interaction and installed Chrome | **Pending manual qualification.** Automatic approval review blocked the attempted browser validation. No successful Playground browser/install run is claimed. |
@@ -89,7 +89,7 @@ Open those files through the installed viewer's **Open local test files** flow. 
 
 AI is optional and unconfigured by default. Local web development can enable the same-origin gateway with a server-owned provider key and explicit loopback opt-in; follow [the exact setup](playground-ai.md#local-development-configuration). No key belongs in client code, `VITE_` environment variables, extension settings or proposal exports. The assistant returns validated packaged operations for review, not executable code. Sharing a screenshot is explicit and separately authorized.
 
-The installed extension intentionally has no external AI transport under its current CSP. Installing the package must not be reported as enabling Claude/Fable automatically. A future approved extension-to-gateway transport and authentication flow are described in [the integration document](playground-ai.md#a-future-assistant-inside-the-packaged-chrome-tab). Browser dictation inserts editable text only, may use a browser speech service, and does not submit instructions or an ECR by itself.
+The installed extension can call the Claude API directly once a user saves their own API key in its options; `api.anthropic.com` is the only outside host its policy allows. Installing the package does not enable the assistant by itself, and no live request has been verified. See [the extension assistant section](playground-ai.md#assistant-in-the-packaged-chrome-extension).
 
 ## Arena boundary
 

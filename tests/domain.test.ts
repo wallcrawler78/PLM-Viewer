@@ -165,6 +165,18 @@ describe('data validation', () => {
     const cycle = structuredClone(snapshot); cycle.occurrences[0].parentId = cycle.occurrences[1].id; cycle.occurrences[1].parentId = cycle.occurrences[0].id;
     expect(() => validateSnapshot(cycle)).toThrow('Cyclic');
   });
+  it('rejects a STEP part whose exact source hash is missing or malformed', async () => {
+    const snapshot = await new PreviewAdapter('precision', fixtureFetch()).loadBom('A');
+    const index = snapshot.parts.findIndex(part => !!part.stepUrl);
+    for (const sourceHash of [undefined, '', 'latest', 'A'.repeat(64)]) {
+      const altered = structuredClone(snapshot);
+      (altered.parts[index] as { sourceHash?: string }).sourceHash = sourceHash;
+      expect(() => validateSnapshot(altered), String(sourceHash)).toThrow('SHA-256 source hash');
+    }
+    const unnamed = structuredClone(snapshot); unnamed.parts[index].revision = '';
+    expect(() => validateSnapshot(unnamed)).toThrow();
+    expect(() => validateSnapshot(structuredClone(snapshot))).not.toThrow();
+  });
   it('validates schema identity and safe resource protocols', () => {
     const duplicate = structuredClone(schemas.precision); duplicate.attributes.push(duplicate.attributes[0]);
     expect(() => validateSchema(duplicate)).toThrow('unique');

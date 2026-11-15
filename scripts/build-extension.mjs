@@ -36,7 +36,8 @@ function validateLocalPolicy(policy) {
   const expected = {
     'default-src': ["'self'"], 'script-src': ["'self'", "'wasm-unsafe-eval'"],
     'object-src': ["'none'"], 'frame-src': ["'none'"], 'worker-src': ["'self'"],
-    'connect-src': ["'self'", 'blob:'], 'img-src': ["'self'", 'data:', 'blob:'],
+    // The one outside host: the Claude API, reached only with the user's own key from the options.
+    'connect-src': ["'self'", 'blob:', 'https://api.anthropic.com'], 'img-src': ["'self'", 'data:', 'blob:'],
     'font-src': ["'self'", 'data:', 'blob:'], 'style-src': ["'self'", "'unsafe-inline'"],
     'base-uri': ["'self'"], 'form-action': ["'none'"],
   };
@@ -104,6 +105,7 @@ export function validateExtensionPackage(files) {
   validateLocalPolicy(policy);
   validateRuntimeManifest(files, manifest.version);
   for (const name of [manifest.background.service_worker, manifest.options_page, ...(manifest.content_scripts ?? []).flatMap(script => [...(script.js ?? []), ...(script.css ?? [])])]) requireFile(name);
+  if (JSON.stringify(manifest.host_permissions ?? []) !== JSON.stringify(['https://api.anthropic.com/*']) || manifest.optional_host_permissions) throw new Error('The viewer extension may reach only its packaged files and the Claude API host.');
   if (manifest.externally_connectable || manifest.permissions?.some(permission => ['downloads', 'cookies', 'debugger', 'webRequest', 'webRequestBlocking'].includes(permission))) throw new Error('Unexpected privileged capability in the viewer extension.');
   for (const [name, bytes] of files) {
     if (name.startsWith('developer/') || name.endsWith('.zip') || /(?:^|\/)\.env(?:\.|$)/.test(name)) throw new Error(`A development artifact or environment file entered the extension: ${name}`);

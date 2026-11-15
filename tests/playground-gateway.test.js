@@ -3,8 +3,8 @@ import { Readable } from 'node:stream';
 import { EventEmitter } from 'node:events';
 import { createViewerServer } from '../server/index.mjs';
 import { createPlaygroundGateway, loadConfiguredPlayground } from '../server/playground.mjs';
-import { validateAssistantRequest, validateAssistantPlan, ASSISTANT_PLAN_SCHEMA } from '../server/playground-contract.mjs';
-import { createAnthropicAssistant } from '../server/playground-provider.mjs';
+import { validateAssistantRequest, validateAssistantPlan, ASSISTANT_PLAN_SCHEMA } from '../shared/playground-contract.mjs';
+import { createAnthropicAssistant } from '../shared/playground-provider.mjs';
 
 const source = { id: 'occ-a', name: 'Bracket', itemId: 'item-a', itemNumber: '100-01', revision: 'A', sourceHash: 'a'.repeat(64), sourceId: 'occ-a', kind: 'source', position: [0, 0, 0], rotation: [0, 0, 0], color: '#999999' };
 const body = () => ({ proposalId: 'p1', proposalVersion: 0, sourceKey: 'source-key', context: { workspaceId: 'w', snapshotId: 'snap', rootItemId: 'assembly', itemNumber: '100', name: 'Assembly', revision: 'A', sourceMode: 'preview' }, prompt: 'Move selected bracket 10 mm upward', selectedId: 'occ-a', baseline: [structuredClone(source)], nodes: [structuredClone(source)], annotations: [] });
@@ -134,11 +134,16 @@ describe('Anthropic data-only adapter', () => {
     expect(JSON.stringify(sent.output_config)).not.toContain('maxItems');
   });
   it('rejects truncation, refusal, malformed output and unsafe upstream errors', async () => {
-    for (const stop_reason of ['max_tokens', 'refusal']) {
+    for (const [stop_reason, code] of [['max_tokens', 'INVALID_PLAN'], ['refusal', 'REFUSED']]) {
       const adapter = createAnthropicAssistant({ apiKey: 'secret', fetcher: async () => new Response(JSON.stringify({ stop_reason, content: [{ type: 'text', text: JSON.stringify(plan()) }] }), { headers: { 'content-type': 'application/json' } }) });
-      await expect(adapter.propose(body())).rejects.toMatchObject({ code: 'INVALID_PLAN' });
+      await expect(adapter.propose(body())).rejects.toMatchObject({ code });
     }
-    const adapter = createAnthropicAssistant({ apiKey: 'secret', fetcher: async () => new Response('sensitive-provider-error', { status: 401 }) });
-    await expect(adapter.propose(body())).rejects.toMatchObject({ code: 'UPSTREAM_ERROR' });
+    for (const [status, code] of [[401, 'KEY_REJECTED'], [403, 'KEY_REJECTED'], [429, 'BUSY'], [529, 'BUSY'], [500, 'UPSTREAM_ERROR']]) {
+      const adapter = createAnthropicAssistant({ apiKey: 'secret', fetcher: async () => new Response('sensitive-provider-error', { status }) });
+      const failure = await adapter.propose(body()).catch(error => error);
+      expect(failure).toMatchObject({ code });
+      expect(String(failure.message)).not.toContain('sensitive-provider-error');
+    }
+    for (const apiKey of ['', ' padded ', 'two\nlines', 'k'.repeat(513), 'kéy']) expect(() => createAnthropicAssistant({ apiKey })).toThrow('valid Playground Anthropic API key');
   });
 });

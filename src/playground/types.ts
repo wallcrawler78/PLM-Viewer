@@ -48,7 +48,9 @@ export interface ProposalContext {
 }
 
 export type AnnotationTarget =
-  | { type: 'view'; camera: CameraState; sceneKey?: string; geometryKey?: string }
+  /** presentationKey identifies the display state a view-bound mark was drawn over (original/proposed/overlay,
+   * explosion, hidden parts). sceneKey and geometryKey record the exact scene at drawing time for traceability. */
+  | { type: 'view'; camera: CameraState; sceneKey?: string; geometryKey?: string; presentationKey?: string }
   | { type: 'document'; fileId: string; itemId: string; revision: string; edition: string; sourceHash: string; page: number };
 
 export interface PlaygroundAnnotation {

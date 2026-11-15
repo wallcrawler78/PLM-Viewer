@@ -25,6 +25,20 @@
     <button type="submit">Save settings</button>
   </form>
   </section>
+  <section id="assistant-section" aria-labelledby="assistant-heading">
+  <div class="section-title"><span class="badge">PLAYGROUND ASSISTANT</span><span class="status-pill" id="assistantState">Not connected</span></div>
+  <h2 id="assistant-heading">Connect Claude</h2>
+  <p>The Playground assistant turns a typed or spoken request into proposed changes you review before applying. It calls Anthropic directly from this browser with your own Claude API key. Usage is billed to that key.</p>
+  <form id="assistant">
+    <label>Claude API key<input id="assistantApiKey" type="password" maxlength="512" autocomplete="off" spellcheck="false" placeholder="sk-ant-…" aria-describedby="assistantKeyNote"></label>
+    <p class="field-note" id="assistantKeyNote">The key is stored unencrypted in this Chrome profile's extension storage and is sent only to api.anthropic.com. Anyone who can use this Chrome profile can use it. Create a separate key with a spend limit for this extension, and remove it here when you no longer need it. It is not synced and is not included in review exports or ECR packages.</p>
+    <label>Claude model ID<input id="assistantModel" maxlength="86" autocomplete="off" spellcheck="false" placeholder="claude-fable-5-2"></label>
+    <label class="checkbox-row"><input id="assistantReviewBeforeApply" type="checkbox"><span><strong>Review each suggestion before it is applied</strong><small>Off by default: a change Claude proposes is applied to the Playground proposal straight away and can be undone. Turn this on to see each suggestion and choose whether to apply it. Source CAD and Arena records are never changed either way.</small></span></label>
+    <label class="checkbox-row"><input id="assistantShareImages" type="checkbox"><span><strong>Allow attaching a screenshot to a request</strong><small>Off by default. When on, the Playground can send the view or PDF page you choose to attach. Nothing is attached automatically.</small></span></label>
+    <p class="field-note">Each request sends your instruction, component names, item numbers, revisions, positions and your markup notes to Anthropic. Source STEP, PDF and Word files are not sent. Check your organization's policy before using this with real product data.</p>
+    <div class="button-row"><button type="submit">Save assistant settings</button><button type="button" class="secondary" id="assistantTest">Test connection</button><button type="button" class="secondary" id="assistantRemove">Remove key</button></div>
+  </form>
+  </section>
   <details><summary>Open an exact Arena source</summary>
     <p>The hosted viewer uses your Arena permissions. A missing connection shows its setup or sign-in state and never substitutes sample files.</p>
     <form id="launch">
@@ -36,5 +50,5 @@
     </form>
   </details>
   <p id="notice" role="status" aria-live="polite"></p>
-  <footer>Settings contain no Arena credentials or attachment bytes. Preview review notes and saved views remain in this browser. Legacy .doc, OCR, and shared live comments are not included in this release.</footer>
+  <footer>Settings contain no Arena credentials or attachment bytes. A Claude API key is stored only if you add one above. Preview review notes and saved views remain in this browser. Legacy .doc, OCR, and shared live comments are not included in this release.</footer>
 </main><script type="module" src="options.js"></script></body></html>

@@ -1,5 +1,6 @@
-/** Fixed data contract for AI-assisted visual proposals. No executable output is accepted. */
-export const ASSISTANT_LIMITS = Object.freeze({ requestBytes: 4 * 1024 * 1024, responseBytes: 512 * 1024, imageBytes: 2 * 1024 * 1024, nodes: 200, annotations: 100, commands: 40, timeoutMs: 90_000 });
+/** Fixed data contract for AI-assisted visual proposals. No executable output is accepted.
+ * Runs unchanged in Node and in the browser: no Node-only APIs. */
+export const ASSISTANT_LIMITS = Object.freeze({ requestBytes: 4 * 1024 * 1024, responseBytes: 512 * 1024, imageBytes: 2 * 1024 * 1024, nodes: 200, annotations: 100, commands: 40, historyTurns: 20, timeoutMs: 90_000 });
 
 export class PlaygroundError extends Error {
   constructor(code = 'INVALID_REQUEST') { super(code); this.name = 'PlaygroundError'; this.code = code; }
@@ -11,6 +12,8 @@ export const ASSISTANT_ERRORS = Object.freeze({
   CONNECTION_CHANGED: [409, 'Your Arena connection changed. Reopen the source before using the assistant.'],
   TOO_LARGE: [413, 'The assistant request is too large. Use a smaller view or fewer annotations.'],
   BUSY: [429, 'The assistant is busy or its local request budget is reached. Try again shortly.'],
+  KEY_REJECTED: [502, 'The AI provider rejected the saved API key. Check it in the extension options.'],
+  REFUSED: [502, 'The AI provider declined this request. Your proposal is unchanged. Rephrase the request or remove the attached image.'],
   UNCONFIGURED: [503, 'The AI connection is not configured. Local Playground tools remain available.'],
   INVALID_PLAN: [502, 'The assistant returned an unsupported proposal. Your current proposal is unchanged.'],
   UPSTREAM_ERROR: [502, 'The AI provider could not complete this request. Your proposal is unchanged.'],
@@ -79,8 +82,8 @@ function annotation(value) {
   list(value.points, 512).forEach(point => { if (!Array.isArray(point) || point.length !== 2) fail(); point.forEach(v => number(v, 0, 1)); });
   if (!value.points.length) fail();
   if (value.target?.type === 'view') {
-    keys(value.target, ['type', 'camera', 'sceneKey', 'geometryKey']); camera(value.target.camera);
-    for (const key of ['sceneKey', 'geometryKey']) if (value.target[key] !== undefined) { text(value.target[key], 256); if (/[\u0000-\u001f\u007f]/.test(value.target[key])) fail(); }
+    keys(value.target, ['type', 'camera', 'sceneKey', 'geometryKey', 'presentationKey']); camera(value.target.camera);
+    for (const key of ['sceneKey', 'geometryKey', 'presentationKey']) if (value.target[key] !== undefined) { text(value.target[key], 256); if (/[\u0000-\u001f\u007f]/.test(value.target[key])) fail(); }
   }
   else if (value.target?.type === 'document') documentIdentity(value.target, true);
   else fail();
@@ -107,8 +110,54 @@ function presentation(value, nodeIds) {
   }
 }
 
+/** Earlier turns of the same Playground session, oldest first. Plain text only. */
+function history(value) {
+  list(value, ASSISTANT_LIMITS.historyTurns).forEach(turn => {
+    keys(turn, ['role', 'text', 'outcome']);
+    if (!['user', 'assistant'].includes(turn.role)) fail();
+    text(turn.text, 2000);
+    if (turn.outcome !== undefined && !['applied', 'dismissed', 'question', 'pending'].includes(turn.outcome)) fail();
+  });
+}
+function sourceContext(value) {
+  keys(value, ['workspaceId', 'snapshotId', 'configurationId', 'rootItemId', 'itemNumber', 'name', 'revision', 'sourceMode']);
+  for (const key of ['workspaceId', 'snapshotId', 'rootItemId', 'itemNumber', 'name', 'revision']) text(value[key]);
+  if (value.configurationId !== undefined) text(value.configurationId);
+  if (!['preview', 'arena'].includes(value.sourceMode)) fail();
+}
+
+/** What Claude is given to draft an ECR description: accepted changes, markup instructions and the session's turns. */
+export function validateEcrDraftRequest(input) {
+  keys(input, ['context', 'title', 'changes', 'markups', 'assumptions', 'history']);
+  sourceContext(input.context); text(input.title, 300);
+  list(input.changes, ASSISTANT_LIMITS.nodes).forEach(change => {
+    keys(change, ['component', 'revision', 'kind', 'summary']);
+    text(change.component, 400); if (change.revision !== undefined) text(change.revision);
+    if (!['added', 'removed', 'modified'].includes(change.kind)) fail();
+    text(change.summary, 4000);
+  });
+  list(input.markups, ASSISTANT_LIMITS.annotations).forEach(mark => {
+    keys(mark, ['number', 'type', 'instruction', 'source']);
+    number(mark.number, 1, 1000); if (!Number.isInteger(mark.number)) fail();
+    if (!['arrow', 'rect', 'ellipse', 'pen', 'note', 'pin'].includes(mark.type)) fail();
+    text(mark.instruction, 4000, true); text(mark.source, 400);
+  });
+  strings(input.assumptions); history(input.history ?? []);
+  if (!input.changes.length && !input.markups.length) fail();
+  return input;
+}
+export function validateEcrDraft(input) {
+  try {
+    keys(input, ['title', 'description', 'openQuestions']);
+    text(input.title, 300); text(input.description, 12000);
+    list(input.openQuestions, 10).forEach(value => text(value, 1000));
+    return input;
+  } catch (error) { if (error instanceof PlaygroundError) throw new PlaygroundError('INVALID_PLAN'); throw error; }
+}
+
 export function validateAssistantRequest(input) {
-  keys(input, ['proposalId', 'proposalVersion', 'sourceKey', 'context', 'selectedId', 'prompt', 'baseline', 'nodes', 'annotations', 'annotationIds', 'image', 'imageContext']);
+  keys(input, ['proposalId', 'proposalVersion', 'sourceKey', 'context', 'selectedId', 'prompt', 'baseline', 'nodes', 'annotations', 'annotationIds', 'image', 'imageContext', 'history']);
+  if (input.history !== undefined) history(input.history);
   text(input.proposalId); text(input.sourceKey, 1024 * 1024); text(input.prompt, 8000);
   number(input.proposalVersion, 0, Number.MAX_SAFE_INTEGER);
   if (!Number.isSafeInteger(input.proposalVersion)) fail();
@@ -131,10 +180,11 @@ export function validateAssistantRequest(input) {
   if (input.annotationIds !== undefined) list(input.annotationIds, ASSISTANT_LIMITS.annotations).forEach(id => { if (!markIds.has(id)) fail(); });
   if (input.image !== undefined) {
     if (typeof input.image !== 'string' || input.image.length > Math.ceil(ASSISTANT_LIMITS.imageBytes / 3) * 4 + 30 || !/^data:image\/(?:png|jpeg);base64,[A-Za-z0-9+/]+={0,2}$/.test(input.image)) throw new PlaygroundError('TOO_LARGE');
-    const bytes = Buffer.from(input.image.split(',')[1], 'base64');
+    let bytes;
+    try { bytes = Uint8Array.from(atob(input.image.split(',')[1]), character => character.charCodeAt(0)); } catch { fail(); }
     if (bytes.length > ASSISTANT_LIMITS.imageBytes || bytes.length < 8) throw new PlaygroundError('TOO_LARGE');
     const png = input.image.startsWith('data:image/png;');
-    if (png ? !bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) : bytes[0] !== 0xff || bytes[1] !== 0xd8 || bytes[2] !== 0xff) fail();
+    if (png ? [137, 80, 78, 71, 13, 10, 26, 10].some((value, index) => bytes[index] !== value) : bytes[0] !== 0xff || bytes[1] !== 0xd8 || bytes[2] !== 0xff) fail();
     if (input.imageContext?.kind === 'model') { keys(input.imageContext, ['kind', 'camera', 'presentation']); camera(input.imageContext.camera); presentation(input.imageContext.presentation, ids); }
     else if (input.imageContext?.kind === 'document') documentIdentity(input.imageContext, true);
     else fail();
@@ -198,3 +248,5 @@ export const ASSISTANT_PLAN_SCHEMA = obj({
   assumptions: { type: 'array', items: str }, questions: { type: 'array', items: str },
   display: obj({ explode: num, labels: { type: 'boolean' }, view: { type: 'string', enum: ['proposed', 'original', 'overlay'] }, hiddenIds: { type: 'array', items: str } }, []),
 });
+
+export const ECR_DRAFT_SCHEMA = obj({ title: str, description: str, openQuestions: { type: 'array', items: str } });

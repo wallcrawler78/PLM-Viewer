@@ -143,12 +143,14 @@ export function validateCamera(input: unknown): CameraState {
 export function validateAnnotationTarget(input: unknown): AnnotationTarget {
   const target=object(input,'Markup target');
   if (target.type === 'view') {
-    keys(target,['type','camera','sceneKey','geometryKey'],'Markup view');
+    keys(target,['type','camera','sceneKey','geometryKey','presentationKey'],'Markup view');
     let sceneKey:string|undefined;
     if(target.sceneKey!==undefined) { sceneKey=text(target.sceneKey,'Markup scene identity',256);if(/[\r\n\t]/.test(sceneKey)) fail('Markup scene identity has invalid characters.'); }
     let geometryKey:string|undefined;
     if(target.geometryKey!==undefined) { geometryKey=text(target.geometryKey,'Markup geometry identity',256);if(/[\r\n\t]/.test(geometryKey)) fail('Markup geometry identity has invalid characters.'); }
-    return {type:'view',camera:validateCamera(target.camera),...(sceneKey===undefined?{}:{sceneKey}),...(geometryKey===undefined?{}:{geometryKey})};
+    let presentationKey:string|undefined;
+    if(target.presentationKey!==undefined) { presentationKey=text(target.presentationKey,'Markup display identity',256);if(/[\r\n\t]/.test(presentationKey)) fail('Markup display identity has invalid characters.'); }
+    return {type:'view',camera:validateCamera(target.camera),...(sceneKey===undefined?{}:{sceneKey}),...(geometryKey===undefined?{}:{geometryKey}),...(presentationKey===undefined?{}:{presentationKey})};
   } else if (target.type === 'document') {
     keys(target,['type','fileId','itemId','revision','edition','sourceHash','page'],'Markup document');
     return {type:'document',fileId:identity(target.fileId,'File'),itemId:identity(target.itemId,'Item'),revision:identity(target.revision,'Revision'),edition:identity(target.edition,'Edition'),sourceHash:identity(target.sourceHash,'Source hash'),page:integer(target.page,'Document page',1,100000)};
@@ -283,17 +285,34 @@ export function redo(history: ProposalHistory): ProposalHistory {
 }
 
 const numeric = (value: number) => Number(value.toFixed(3)).toString();
+const vectorText = (value: readonly number[]) => `[${value.map(numeric).join(', ')}]`;
+const degrees = (value: readonly number[]) => `[${value.map(n=>numeric(n*180/Math.PI)).join(', ')}]°`;
+const signed = (value: number) => `${value>0?'+':''}${numeric(value)}`;
+/** Concept sizes as an engineer would read them. Hole offsets are from the centre of the bracket's horizontal plate. */
+export function dimensionText(dimensions: ProposalDimensions | undefined): string {
+  if(!dimensions) return 'no dimensions';
+  const parts=[`${numeric(dimensions.width)} × ${numeric(dimensions.depth)} × ${numeric(dimensions.height)} mm (width × depth × height)`];
+  if(dimensions.thickness!==undefined) parts.push(`thickness ${numeric(dimensions.thickness)} mm`);
+  if(dimensions.holeDiameter) parts.push(`hole ⌀${numeric(dimensions.holeDiameter)} mm at (${numeric(dimensions.holeX??0)}, ${numeric(dimensions.holeY??0)}) mm from plate centre`);
+  return parts.join(', ');
+}
+/** Every change states the source value, the proposed value and, for a move, the difference.
+ * Poses are absolute in the assembly frame used by the viewer: millimeters, Z up, XYZ rotations. */
 export function proposalChanges(proposal: Proposal): ProposalChange[] {
   const baseline=new Map(proposal.baseline.map(n=>[n.id,n]));
   const result:ProposalChange[]=[];
   for(const node of proposal.nodes) {
     const before=baseline.get(node.id);
     const identity={nodeId:node.id,name:node.name,...(node.itemId?{itemId:node.itemId}:{}),...(node.itemNumber?{itemNumber:node.itemNumber}:{}),...(node.revision?{revision:node.revision}:{})};
-    if(!before) { if(!node.removed) result.push({...identity,kind:'added',fields:[],summary:`Add concept ${node.name} (${node.kind}); visual representation only.`,after:copy(node)}); continue; }
-    if(node.removed) {result.push({...identity,kind:'removed',fields:[],summary:`Propose removing ${node.name} (${node.itemNumber ?? node.id}) from this configuration.`,before:copy(before),after:copy(node)});continue;}
+    if(!before) { if(!node.removed) result.push({...identity,kind:'added',fields:[],summary:`Add concept ${node.name} (${node.kind}): ${dimensionText(node.dimensions)}; position ${vectorText(node.position)} mm, rotation ${degrees(node.rotation)} XYZ. Visual representation only, not CAD.`,after:copy(node)}); continue; }
+    if(node.removed) {result.push({...identity,kind:'removed',fields:[],summary:`Propose removing ${node.name} (${node.itemNumber ?? node.id}) from this configuration. Source position ${vectorText(before.position)} mm.`,before:copy(before),after:copy(node)});continue;}
     const fields=(['position','rotation','dimensions','color','name'] as const).filter(field=>!same(node[field],before[field]));
     if(!fields.length) continue;
-    const details=fields.map(field=>field==='position'?`position [${node.position.map(numeric).join(', ')}] mm`:field==='rotation'?`rotation [${node.rotation.map(n=>numeric(n*180/Math.PI)).join(', ')}]° XYZ`:field==='color'?`display color ${node.color}`:field==='name'?`label “${node.name}”`:'concept dimensions');
+    const details=fields.map(field=>field==='position'?`position ${vectorText(before.position)} → ${vectorText(node.position)} mm (moved ${node.position.map((value,index)=>signed(value-before.position[index])).join(', ')} mm in X, Y, Z)`
+      :field==='rotation'?`rotation ${degrees(before.rotation)} → ${degrees(node.rotation)} XYZ`
+      :field==='color'?`display color ${before.color} → ${node.color} (appearance only, not a material)`
+      :field==='name'?`label “${before.name}” → “${node.name}”`
+      :`dimensions ${dimensionText(before.dimensions)} → ${dimensionText(node.dimensions)}`);
     result.push({...identity,kind:'modified',fields,summary:`${node.itemNumber ?? node.name}: ${details.join('; ')}.`,before:copy(before),after:copy(node)});
   }
   return result;

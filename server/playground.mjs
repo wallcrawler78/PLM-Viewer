@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { ASSISTANT_LIMITS, PlaygroundError, assistantFailure, validateAssistantRequest, validateAssistantPlan, stampAssistantConcepts } from './playground-contract.mjs';
-import { abortable, createAnthropicAssistant } from './playground-provider.mjs';
+import { ASSISTANT_LIMITS, PlaygroundError, assistantFailure, validateAssistantRequest, validateAssistantPlan, stampAssistantConcepts } from '../shared/playground-contract.mjs';
+import { abortable, createAnthropicAssistant } from '../shared/playground-provider.mjs';
 
 const PREFIX = '/api/viewer/v1/playground/';
 const loopback = value => value === '127.0.0.1' || value === '::1' || value === '::ffff:127.0.0.1';

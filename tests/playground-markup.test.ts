@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PerspectiveCamera, Vector3 } from 'three';
-import { markupGeometryKey, markupSceneKey, markupSvg, moveMarkupPoints, sameCamera, visibleMarkupPoints } from '../src/playground/markup';
+import { markupGeometryKey, markupPresentationKey, markupSceneKey, markupSvg, moveMarkupPoints, sameCamera, visibleMarkupPoints } from '../src/playground/markup';
 import type { Point2 } from '../src/playground/markup';
 import type { CameraState, PlaygroundAnnotation, ProposalNode, Vec3 } from '../src/playground/types';
 
@@ -39,15 +39,31 @@ describe('Markup source, geometry and presentation binding', () => {
     expect(markupGeometryKey([...nodes].reverse())).toBe(geometry);
     expect(markupSceneKey([...nodes].reverse(), { ...p, hiddenIds: [...p.hiddenIds].reverse() })).toBe(scene);
   });
-  it('follows complete mesh anchors through a rigid move and camera change, but hides them after geometry changes', () => {
+  it('keeps surface-anchored and view-bound marks when the proposal is edited after they were drawn', () => {
+    const nodes = [source()], edited = [source({ position: [20, 0, 0] }), concept()];
+    const anchored = arrow(nodes, { anchors: [{ nodeId: 'source-1', localPoint: [1, 2, 3] }, { nodeId: 'source-1', localPoint: [4, 5, 6] }] });
+    const project = vi.fn((_id: string, point: Vec3): Point2 => [point[0] / 10, point[1] / 10]);
+    // Adding a concept bracket and moving a part changes both recorded keys; the mark must stay.
+    expect(visibleMarkupPoints(anchored, camera, project, markupSceneKey(edited, presentation), markupGeometryKey(edited), markupPresentationKey(presentation))).toEqual([[0.1, 0.2], [0.4, 0.5]]);
+    const viewBound = arrow(nodes, { target: { type: 'view', camera, sceneKey: markupSceneKey(nodes, presentation), geometryKey: markupGeometryKey(nodes), presentationKey: markupPresentationKey(presentation) } });
+    expect(visibleMarkupPoints(viewBound, camera, undefined, markupSceneKey(edited, presentation), markupGeometryKey(edited), markupPresentationKey(presentation))).toEqual(viewBound.points);
+    // A different display state or camera is a different picture: the view-bound mark does not follow.
+    for (const changed of [{ ...presentation, view: 'original' }, { ...presentation, explode: 0.5 }, { ...presentation, hiddenIds: ['source-1'] }]) {
+      expect(visibleMarkupPoints(viewBound, camera, undefined, markupSceneKey(nodes, changed), markupGeometryKey(nodes), markupPresentationKey(changed)), JSON.stringify(changed)).toBeNull();
+    }
+    expect(visibleMarkupPoints(viewBound, { ...camera, position: [50, -100, 0] }, undefined, markupSceneKey(nodes, presentation), markupGeometryKey(nodes), markupPresentationKey(presentation))).toBeNull();
+    expect(markupPresentationKey({ ...presentation, hiddenIds: ['b', 'a'] })).toBe(markupPresentationKey({ ...presentation, hiddenIds: ['a', 'b'] }));
+  });
+  it('numbers every markup in an image with the number it has in the proposal list', () => {
+    const svg = markupSvg([{ mark: arrow(), points: [[0.4, 0.5], [0.6, 0.5]], number: 7 }, { mark: arrow([source()], { id: 'pin', type: 'pin', points: [[0.2, 0.2]] }), points: [[0.2, 0.2]], number: 3 }], 800, 600);
+    expect(svg).toMatch(/>7<\/text>/); expect(svg).toMatch(/>3<\/text>/); expect(svg).not.toMatch(/>1<\/text>/);
+  });
+  it('follows complete mesh anchors through a rigid move and camera change', () => {
     const nodes = [source()], mark = arrow(nodes, { anchors: [{ nodeId: 'source-1', localPoint: [1, 2, 3] }, { nodeId: 'source-1', localPoint: [4, 5, 6] }] });
     const moved = [source({ position: [20, 0, 0] })], project = vi.fn((_id: string, point: Vec3): Point2 => [point[0] / 10, point[1] / 10]);
     expect(visibleMarkupPoints(mark, { ...camera, position: [50, -100, 0] }, project, markupSceneKey(moved, presentation), markupGeometryKey(moved)))
       .toEqual([[0.1, 0.2], [0.4, 0.5]]);
     expect(project).toHaveBeenCalledWith('source-1', [1, 2, 3]); expect(project).toHaveBeenCalledWith('source-1', [4, 5, 6]);
-    project.mockClear();
-    expect(visibleMarkupPoints(mark, camera, project, 'another-scene', markupGeometryKey([source({ sourceHash: 'b'.repeat(64) })]))).toBeNull();
-    expect(project).not.toHaveBeenCalled();
   });
   it('hides anchored marks when their component is hidden or absent rather than inventing a projection', () => {
     const nodes = [source()], mark = arrow(nodes, { anchors: [{ nodeId: 'source-1', localPoint: [0, 0, 0] }, { nodeId: 'source-1', localPoint: [1, 0, 0] }] });

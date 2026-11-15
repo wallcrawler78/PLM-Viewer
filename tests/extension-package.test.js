@@ -103,9 +103,22 @@ describe('complete extension artifact', () => {
     expect(() => validateExtensionPackage(missing)).toThrow('missing vendor/occt/NOTICE.txt');
   });
 
+  it.each([[['https://api.anthropic.com/*', 'https://example.com/*']], [['<all_urls>']], [['https://*/*']], [[]]])('rejects any host access other than the Claude API: %j', hosts => {
+    const invalid = new Map(files), manifest = JSON.parse(invalid.get('manifest.json'));
+    manifest.host_permissions = hosts;
+    invalid.set('manifest.json', Buffer.from(JSON.stringify(manifest)));
+    expect(() => validateExtensionPackage(invalid)).toThrow('only its packaged files and the Claude API host');
+    const optional = new Map(files), other = JSON.parse(optional.get('manifest.json'));
+    other.optional_host_permissions = ['https://example.com/*'];
+    optional.set('manifest.json', Buffer.from(JSON.stringify(other)));
+    expect(() => validateExtensionPackage(optional)).toThrow('only its packaged files and the Claude API host');
+  });
+
   it.each([
     ["worker-src 'self'", "worker-src 'self' blob:"],
-    ["connect-src 'self' blob:", "connect-src 'self' blob: https:"],
+    ["connect-src 'self' blob: https://api.anthropic.com", "connect-src 'self' blob: https:"],
+    ["connect-src 'self' blob: https://api.anthropic.com", "connect-src 'self' blob: https://api.anthropic.com https://example.com"],
+    ["connect-src 'self' blob: https://api.anthropic.com", "connect-src 'self' blob: https://*.anthropic.com"],
     ["script-src 'self' 'wasm-unsafe-eval'", "script-src 'self' 'self'"],
     ["default-src 'self';", "default-src 'self'; script-src-elem 'unsafe-inline';"],
   ])('rejects a relaxed or ambiguous resource policy: %s', (before, after) => {

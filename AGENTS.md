@@ -11,9 +11,11 @@ Keep UI language about the review task. Explain precision, unavailable sources, 
 - Preview must remain usable without Arena credentials and must not contact Arena.
 - A live-mode launch must fail closed when the workspace provider is absent, unauthorized, or invalid. Never substitute preview data after a live error.
 - `/api/viewer/v1` is the viewer-owned BFF contract. Verify current Arena API details before implementing a provider; do not guess endpoints or request payloads.
-- Keep credentials and session tokens on the authorized server. Do not add them to source, Git history, browser storage, the extension, logs, or client environment variables.
+- Keep Arena credentials and session tokens on the authorized server. Do not add them to source, Git history, browser storage, the extension, logs, or client environment variables.
+- One deliberate exception, decided by the product owner: the packaged extension has no server, so a user may save their own Claude API key in the extension options for the Playground assistant. Keep that key in extension storage restricted to extension pages, send it only to `https://api.anthropic.com`, never echo it into a form, URL, proposal, review export, ECR package, or log, and keep content scripts unable to read it. Do not widen the extension's host access or connection policy beyond that one host without the owner's decision.
+- Playground assistant suggestions change only the visual proposal. By the product owner's decision they apply immediately by default, with undo and an opt-in review-first setting. Keep full validation and the source/version guard before any apply, never apply a reply that asks a question, and never let a suggestion write to source CAD, the BOM, or Arena.
 - A broad service account is not proof of each human viewer's access. Authorize source reads and review writes in the proper user/workspace context.
-- This portable checkout omits deployment identity and is for local/extension development. Do not create or alter a hosted deployment as part of extension qualification. If working in a separately authorized Sites checkout that contains `.openai/hosting.json`, preserve its project identity and audience and use its supported source/package/deployment workflow.
+- This portable checkout omits deployment identity and is for local/extension development. Do not create or alter a hosted deployment as part of extension qualification. The hosted Preview is managed from a separate checkout with its own deployment tooling; nothing in this repository publishes to it. Build and verify here with `npm run check`, `npm run build`, and `npm run build:extension`.
 
 ## Domain and geometry
 

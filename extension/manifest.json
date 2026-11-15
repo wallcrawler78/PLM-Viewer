@@ -1,11 +1,14 @@
 {
   "manifest_version": 3,
   "name": "Review Studio \u00b7 Universal Viewer",
-  "description": "Review STEP models and PDF/Word documents in a packaged local workspace, with an optional Arena launch connection.",
+  "description": "Review STEP models and PDF/Word documents in a packaged local workspace, with an optional Arena launch connection and an optional Claude assistant that uses your own API key.",
   "version": "0.8.0",
   "permissions": [
     "contextMenus",
     "storage"
+  ],
+  "host_permissions": [
+    "https://api.anthropic.com/*"
   ],
   "background": {
     "service_worker": "background.js",
@@ -16,7 +19,7 @@
     "default_title": "Open Review Studio"
   },
   "content_security_policy": {
-    "extension_pages": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; object-src 'none'; frame-src 'none'; worker-src 'self'; connect-src 'self' blob:; img-src 'self' data: blob:; font-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'none';"
+    "extension_pages": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; object-src 'none'; frame-src 'none'; worker-src 'self'; connect-src 'self' blob: https://api.anthropic.com; img-src 'self' data: blob:; font-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'none';"
   },
   "content_scripts": [
     {

@@ -4,7 +4,7 @@ The extension package contains the viewer application, local STEP processing eng
 
 The first packaged release keeps the existing authenticated **hosted Arena viewer** as the live launch destination. Direct MCP authentication from the extension is not implemented or verified. An Arena launch never substitutes Preview when configuration or access fails.
 
-Version **0.8.0** adds a **Playground** tab to the packaged workspace. Its visual proposal tools, model/PDF markups and Preview ECR packages run locally. The optional AI gateway is available only to a separately configured web development/hosted viewer; this extension build does not connect to an AI service. Live Arena ECR creation is not enabled.
+Version **0.8.0** adds a **Playground** tab to the packaged workspace. Its visual proposal tools, model/PDF markups and Preview ECR packages run locally. The optional Playground assistant connects to the Claude API only after a user saves their own API key under **Connect Claude** in the options; without a key the extension contacts no AI service. Live Arena ECR creation is not enabled.
 
 ## Build
 

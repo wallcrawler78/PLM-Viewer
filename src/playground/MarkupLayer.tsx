@@ -8,7 +8,7 @@ export type MarkupTool = 'select' | PlaygroundAnnotation['type'];
 interface Props {
   tool: MarkupTool;
   target: AnnotationTarget;
-  marks: {mark: PlaygroundAnnotation;points:Point2[]}[];
+  marks: {mark: PlaygroundAnnotation;points:Point2[];number?:number}[];
   selectedId?: string | null;
   color: string;
   onSelect: (id:string|null)=>void;
@@ -55,7 +55,7 @@ export function MarkupLayer({tool,target,marks,selectedId,color,onSelect,onChang
     if(!action.move&&mark.type!=='pin'&&mark.type!=='note'&&Math.hypot(mark.points.at(-1)![0]-mark.points[0][0],mark.points.at(-1)![1]-mark.points[0][1])<0.006&&mark.points.length<=2)return;
     // Freehand and region marks are tied to the view. Hundreds of mesh raycasts per
     // stroke are unnecessary and do not establish a meaningful surface region.
-    const anchors=target.type==='view'&&pick&&['arrow','note','pin'].includes(mark.type)?mark.points.map(([u,v])=>pick(u,v)):undefined;
+    const anchors=target.type==='view'&&pick&&['arrow','note','pin'].includes(mark.type)?mark.points.map(([u,v])=>{const hit=pick(u,v);return hit?{nodeId:hit.nodeId,localPoint:hit.localPoint}:null;}):undefined;
     onChange({...mark,...(anchors?{anchors}:{})});onSelect(mark.id);
   }
   const shown=marks.filter(entry=>entry.mark.id!==draft?.id);if(draft)shown.push({mark:draft,points:draft.points});

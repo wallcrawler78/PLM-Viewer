@@ -4,7 +4,7 @@
  * Requires a durable journal and provider-enforced idempotency before enabling.
  */
 import { createHash } from 'node:crypto';
-import { abortable } from './playground-provider.mjs';
+import { abortable } from '../shared/playground-provider.mjs';
 
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const text = (value, maximum = 512) => typeof value === 'string' && value.trim().length > 0 && value.length <= maximum && !/[\u0000-\u001f\u007f]/.test(value);
@@ -22,7 +22,7 @@ function normalizeFiles(review, incoming) {
     return { name: file.name, mimeType: file.mimeType, bytes: Buffer.from(file.bytes), sha256: hash(file.bytes) };
   });
   if (new Set(files.map(file => file.name)).size !== files.length) throw new EcrIntegrationError('INVALID_ATTACHMENTS');
-  if (!Array.isArray(review.captures) || review.captures.length > 3 || !Array.isArray(review.manifest.attachments) || review.manifest.attachments.length !== files.length) throw new EcrIntegrationError('INVALID_ATTACHMENTS');
+  if (!Array.isArray(review.captures) || review.captures.length > 4 || !Array.isArray(review.manifest.attachments) || review.manifest.attachments.length !== files.length) throw new EcrIntegrationError('INVALID_ATTACHMENTS');
   for (const declared of review.manifest.attachments) {
     const actual = files.find(file => file.name === declared.name);
     if (!actual || declared.byteLength !== actual.bytes.byteLength || declared.mimeType !== actual.mimeType || declared.sha256 !== actual.sha256) throw new EcrIntegrationError('ATTACHMENT_CHANGED');

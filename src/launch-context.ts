@@ -8,6 +8,9 @@ export interface LaunchContext {
   /** Revision of the requested item/file, which can differ from its parent BOM. */
   revision?: string;
   fileId?: string;
+  /** Exact file edition and SHA-256 pin. A launch that carries them must open that source or fail. */
+  edition?: string;
+  sourceHash?: string;
   view?: WorkspaceView;
   compare?: boolean;
 }
@@ -21,7 +24,8 @@ export interface PreviewLaunch {
 
 export class LaunchContextError extends Error { override name = 'LaunchContextError'; }
 
-/** Parse only viewer-owned launch parameters; unknown integration metadata is ignored. */
+/** Parse only viewer-owned launch parameters; unknown integration metadata is ignored.
+ * An edition or source hash is an exact-source pin and is never ignored. */
 export function parseLaunchContext(search: string): LaunchContext {
   if (search.length > 8192) throw new LaunchContextError('The viewer launch URL is too long. Open the attachment again from its item.');
   const params = new URLSearchParams(search);
@@ -36,10 +40,11 @@ export function parseLaunchContext(search: string): LaunchContext {
   const mode = value('mode') ?? 'preview';
   if (mode !== 'preview' && mode !== 'arena') throw new LaunchContextError('The viewer launch mode is unsupported. Use Preview or a configured Arena launch.');
   const result: LaunchContext = { mode };
-  for (const key of ['workspaceId', 'itemId', 'revision', 'fileId'] as const) {
+  for (const key of ['workspaceId', 'itemId', 'revision', 'fileId', 'edition', 'sourceHash'] as const) {
     const found = value(key);
     if (found !== undefined) result[key] = found;
   }
+  if (result.sourceHash !== undefined && !/^[a-f0-9]{64}$/.test(result.sourceHash)) throw new LaunchContextError('The viewer launch has an invalid sourceHash. Use the exact lowercase SHA-256 of the source file.');
   const view = value('view');
   if (view !== undefined) {
     if (!['documents', 'model', 'together'].includes(view)) throw new LaunchContextError('The requested viewer layout is unsupported.');
@@ -89,10 +94,13 @@ export function resolvePreviewLaunch(context: LaunchContext, snapshots: BomSnaps
     if (context.compare && !file) throw new LaunchContextError('Open a document before requesting a document revision comparison.');
     return { snapshot, file, workspaceView, selectedIds: snapshot.occurrences.filter(occurrence => occurrence.partId === itemId).map(occurrence => occurrence.id), compare: !!context.compare };
   }
-  function checkRequestedIdentity(itemId: string, revision: string) {
+  function checkRequestedIdentity(itemId: string, revision: string, edition: string | undefined, sourceHash: string | undefined) {
     if (context.itemId && context.itemId !== itemId) throw new LaunchContextError('The requested file does not belong to the item in this launch. No different file has been opened.');
     if (context.revision && context.revision !== revision) throw new LaunchContextError('The requested file revision does not match this launch. No newer revision has been substituted.');
+    if (context.edition && context.edition !== edition) throw new LaunchContextError('The requested file edition is unavailable in this preview. No other edition has been substituted.');
+    if (context.sourceHash && context.sourceHash !== sourceHash) throw new LaunchContextError('The requested source hash does not match this file. No other edition has been substituted.');
   }
+  if ((context.edition || context.sourceHash) && !context.fileId) throw new LaunchContextError('A file edition or source hash requires an exact file identifier.');
 
   if (context.fileId) {
     const documents = available.flatMap(snapshot => snapshot.documents.filter(file => file.id === context.fileId).map(file => ({ snapshot, file })));
@@ -100,20 +108,21 @@ export function resolvePreviewLaunch(context: LaunchContext, snapshots: BomSnaps
       const file = documents[0].file;
       const identities = new Set(documents.map(({ file: candidate }) => JSON.stringify([candidate.itemId, candidate.revision, candidate.edition, candidate.sourceHash, candidate.kind, candidate.url])));
       if (identities.size !== 1) throw new LaunchContextError('This file ID resolves to conflicting editions. Open an exact source from the item.');
-      checkRequestedIdentity(file.itemId, file.revision);
+      checkRequestedIdentity(file.itemId, file.revision, file.edition, file.sourceHash);
       if (context.view === 'model') throw new LaunchContextError('A document launch needs the Documents or Together layout.');
       const snapshot = preferredSnapshot(documents.map(candidate => candidate.snapshot));
       return finish(snapshot, file, file.itemId, context.view ?? 'documents');
     }
 
     const models = available.flatMap(snapshot => [
-      ...(snapshot.assemblyStepUrl ? [{ snapshot, itemId: snapshot.rootItemId, revision: snapshot.revision, identity: snapshot.assemblyStepUrl }] : []),
-      ...snapshot.parts.filter(part => !!part.stepUrl && snapshot.occurrences.some(occurrence => occurrence.partId === part.id && occurrence.partRevision === part.revision && occurrence.modelState === 'loaded')).map(part => ({ snapshot, itemId: part.id, revision: part.revision, identity: JSON.stringify([part.stepUrl, part.sourceHash]) })),
+      ...(snapshot.assemblyStepUrl ? [{ snapshot, itemId: snapshot.rootItemId, revision: snapshot.revision, sourceHash: undefined as string | undefined, identity: snapshot.assemblyStepUrl }] : []),
+      ...snapshot.parts.filter(part => !!part.stepUrl && snapshot.occurrences.some(occurrence => occurrence.partId === part.id && occurrence.partRevision === part.revision && occurrence.modelState === 'loaded')).map(part => ({ snapshot, itemId: part.id, revision: part.revision, sourceHash: part.sourceHash as string | undefined, identity: JSON.stringify([part.stepUrl, part.sourceHash]) })),
     ]).filter(model => previewModelFileId(model.itemId, model.revision) === context.fileId);
     if (!models.length) throw new LaunchContextError('The requested file is unavailable in this preview. No other file has been substituted.');
     const model = models[0];
     if (new Set(models.map(candidate => candidate.identity)).size !== 1) throw new LaunchContextError('This model ID resolves to conflicting source editions.');
-    checkRequestedIdentity(model.itemId, model.revision);
+    // Preview models carry no edition, and the assembly STEP no hash: a pin on either cannot be honoured.
+    checkRequestedIdentity(model.itemId, model.revision, undefined, model.sourceHash);
     if (context.view === 'documents') throw new LaunchContextError('A STEP launch needs the 3D or Together layout.');
     const snapshot = preferredSnapshot(models.map(candidate => candidate.snapshot));
     const view = context.view ?? 'model';

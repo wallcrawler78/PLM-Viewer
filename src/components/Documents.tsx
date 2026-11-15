@@ -10,7 +10,7 @@ import { DocumentScrollLink, documentNavigationScrollTop, readDocumentNavigation
 import type { DocumentNavigation, DocumentPageGeometry } from '../document-navigation';
 import { fetchViewerContent } from '../integrations/protectedContent';
 import { pdfRasterSize, renderPdfLayers, sanitizeWordMarkup, validateWordSymbols } from '../document-rendering';
-import { boundedDocumentTask, documentComparisonCoverage, documentExtraction, DOCUMENT_PROCESSING_LIMITS, extractionCoverageMessage, failedDocumentExtraction, localPdfAssetUrls, readDocumentSource } from '../document-extraction';
+import { boundedDocumentTask, documentComparisonCoverage, documentExtraction, DOCUMENT_PROCESSING_LIMITS, extractionCoverageMessage, failedDocumentExtraction, localPdfAssetUrls, readDocumentSource, verifyDocumentSource } from '../document-extraction';
 import type { DocumentExtraction, DocumentPageCoverage } from '../document-extraction';
 import { validateWordPackage } from '../document-package';
 import { createPdfRasterSource } from '../pdf-visual-raster';
@@ -181,6 +181,9 @@ function FileContent({ file, pageOverlay, sourcePresentation = 'item', markMode,
         let data: ArrayBuffer;
         try { data = await readDocumentSource(signal => fetchViewerContent(file.url, signal), controller.signal); }
         catch (failure) { if (controller.signal.aborted) throw failure; throw new DocumentOpenError(failure instanceof Error ? failure.message : unreadableAttachmentMessage); }
+        if (stopped) return;
+        try { await verifyDocumentSource(data, file.sourceHash); }
+        catch (failure) { throw new DocumentOpenError(failure instanceof Error ? failure.message : unreadableAttachmentMessage); }
         if (stopped) return;
         if (file.kind === 'pdf') {
           workerOwner = createLocalPdfWorker();

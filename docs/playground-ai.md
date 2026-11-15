@@ -1,6 +1,6 @@
 # Playground AI and Arena ECR connection
 
-The Playground works locally without AI: model viewing, visual proposal editing, labels, drawing, Undo/Redo, comparison, and the Preview ECR workflow do not need an AI service. The assistant is an optional server connection. An unconfigured connection is displayed as unavailable; the app does not substitute a canned response and call it Fable.
+The Playground works locally without AI: model viewing, visual proposal editing, labels, drawing, Undo/Redo, comparison, and the Preview ECR workflow do not need an AI service. The assistant is optional. In the packaged Chrome extension it uses the user's own Claude API key; in local web development it can use the server gateway described below. An unconfigured connection is displayed as unavailable; the app does not substitute a canned response and call it Fable.
 
 ## Implemented connection
 
@@ -8,9 +8,9 @@ The Playground works locally without AI: model viewing, visual proposal editing,
 | --- | --- |
 | `GET /api/viewer/v1/playground/status` | Viewer-owned capability response, scoped by `sourceMode` and `workspaceId`; never claims live ECR support |
 | `POST /api/viewer/v1/playground/propose` | Accepts a bounded scene description and design intent; returns a proposed transaction for user review |
-| Anthropic adapter | Calls the official Messages API using a server-only key and a fixed endpoint; supports configurable Claude model ID |
+| Anthropic adapter | `shared/playground-provider.mjs` calls the official Messages API at a fixed endpoint with the key it is given (a server environment variable, or the user's key in the extension); supports a configurable Claude model ID |
 | Browser | Validates the entire transaction again and checks proposal ID, version and exact source key before applying it |
-| Chrome package | Local editing remains available; assistant reports that the authorized hosted viewer is required. No outside AI host is added to the extension CSP. |
+| Chrome package | Calls `https://api.anthropic.com/v1/messages` directly from the viewer page with the user's own API key saved in the extension options. That host is the only outside origin in the extension's connection policy and host permissions. |
 | Live Arena | Requires the existing authenticated user/workspace connection and a separately configured external-AI sharing policy |
 | Live ECR | Disabled. A server-only orchestration seam is tested with simulated bindings, but no Arena write MCP tool is mapped or exposed. |
 
@@ -39,11 +39,34 @@ The default model ID was checked against [Anthropic's Fable 5.2 documentation](h
 
 The model receives the prompt, compact original/proposed component data, source identity metadata, annotations and any expressly attached image. The baseline lets it describe actual accepted changes without inferring them from the current view. It does not receive original STEP/PDF/DOCX files automatically. Anthropic currently documents a 30-day retention requirement for Fable 5.2 unless it explicitly grants an exception; administrators should choose a model and account appropriate for their engineering information. This is separate from permission to read a file in Arena.
 
-## A future assistant inside the packaged Chrome tab
+## Assistant in the packaged Chrome extension
 
-The current extension intentionally keeps `connect-src 'self' blob:` and does not embed an AI credential. To add remote assistant access while keeping the UI in that extension tab, use a packaged extension service worker as a narrowly scoped transport to an administrator-approved HTTPS gateway. That gateway still owns the model key, user/session authorization, external-processing policy, budgets and ECR bindings. A future extension build must declare the approved gateway origins in both its connection CSP and optional host permissions; it should request only the particular configured origin when that feature is enabled. Host permission alone does not override the current restrictive connection CSP. It must not accept arbitrary fetch URLs or expose a generic proxy to content scripts. See Chrome's official [cross-origin request guidance](https://developer.chrome.com/docs/extensions/develop/concepts/network-requests) and [permissions API](https://developer.chrome.com/docs/extensions/reference/api/permissions).
+The extension has no server. A user enables the assistant by saving their own Claude API key under **Connect Claude** in the extension options. This was a product-owner decision; it trades the server-held key for a setup with nothing to host.
 
-Authenticate the human user with an extension-appropriate supported OAuth flow and retain only short-lived connection state, not the AI vendor key. The gateway will need an explicitly registered extension client and validated token audience/user/workspace; its current cookie-authenticated same-origin route cannot simply be reused by removing the Origin check. Validate messages on both ends and bind results to the same proposal/source guards used here. These are planned changes requiring installed-extension authentication/CSP qualification; this release does not claim them as implemented. Ordinary local Playground operations remain fully packaged today.
+| Aspect | Behavior |
+| --- | --- |
+| Storage | `chrome.storage.local` keys `assistantApiKey`, `assistantModel`, `assistantShareImages`. The service worker sets the storage access level to trusted contexts on every start, so content scripts on Arena pages cannot read it; they get their three launch settings from the service worker by message. |
+| Display | The options page never shows the saved key again, only its last four characters. **Remove key** deletes it. |
+| Transport | `src/playground/extension-assistant.ts` runs in the viewer page. It validates the request, calls the shared adapter with `anthropic-dangerous-direct-browser-access: true`, validates the returned plan, and the client validates it again against the current proposal. The request carries no cookies and follows no redirects. |
+| Reach | The manifest allows `connect-src 'self' blob: https://api.anthropic.com` and host permission for `https://api.anthropic.com/*` only. `scripts/build-extension.mjs` rejects any other host. The API URL is fixed in code. |
+| Model | Defaults to `claude-fable-5-2`; any `claude-…` model ID the key can use may be entered. **Test connection** makes one read-only models request that produces no output. |
+| Images | Sent only when the user turns on image sharing in the options and also chooses to attach a view to that request. |
+| Limits | The same 200 components, 100 marks, 40 commands, 4 MiB body and 95-second deadline as the gateway. There is no request budget: spend is limited only by the key's own limits. |
+
+### Conversation and ECR drafting
+
+- **Follow-up requests.** The Playground keeps the turns of the current session (what was asked, what was suggested, and whether it was applied or dismissed) in memory. Up to 20 earlier turns of at most 2,000 characters are sent with each request so that "a bit more" or "the same on the other side" can be understood. The current scene remains the authority for state. The conversation is not saved with the proposal and is cleared on reload, on **Clear**, or when a proposal is opened from a file.
+- **Draft with Claude.** In the Create ECR dialog, in the extension with a saved key, the user can ask for suggested wording. The request sends the product context, the accepted change summaries (source value, proposed value, delta), the numbered markup instructions, stated assumptions and the session's turns. It sends no geometry, images, source hashes or delivery URLs. The reply is a title, a description and open questions, shown as a suggestion that is not used until the user chooses it; it never overwrites typed text on its own and stays editable. Claude is instructed to leave out display-only actions and dismissed ideas and not to invent dimensions or reasons, but the wording must still be reviewed.
+- **Applying suggestions.** By default a validated suggestion is applied to the Playground proposal as soon as it arrives. The panel then shows what was applied, with its assumptions and **Undo this change**. A reply that asks a question is never applied. The user can turn on **Review each suggestion before it is applied**, in the assistant panel or the extension options, to see each suggestion and choose **Apply suggestion** instead. Either way only the visual proposal changes; source CAD and Arena records are never edited, and every suggestion passes the same validation and source/version checks first.
+
+What a user should know before saving a key:
+
+- The key is stored unencrypted in the Chrome profile. Anyone who can use that profile, or malware on the machine, can read or use it. Use a dedicated key with a spend limit and revoke it when it is no longer needed.
+- There is no administrator control over what is sent. Each request sends the instruction, component names, item numbers, revisions, poses and markup notes to Anthropic. Source STEP, PDF and Word files are not sent.
+- A declined request (`stop_reason: "refusal"`) is reported as declined and leaves the proposal unchanged. Server-side model fallback is not enabled.
+- No request has been made with a real key during development. The first live test should confirm the model ID, structured output and response time against the user's own account.
+
+The service-worker route described in earlier revisions of this page (extension to an administrator gateway) is not implemented.
 
 ## Live user and source authorization
 

@@ -277,6 +277,8 @@ export class PlaygroundEngine implements PlaygroundViewportHandle {
       } catch (error) { geometry.dispose(); throw error; }
     })();
     request.promise = promise; request.controller = controller; this.cache.set(key, request);
+    // A failed import must not be remembered as the answer: the next load tries the source again.
+    promise.catch(() => { if (this.cache.get(key) === request) this.cache.delete(key); });
     return promise;
   }
 
@@ -494,6 +496,12 @@ export class PlaygroundEngine implements PlaygroundViewportHandle {
     if (![...state.position, ...state.target].every(Number.isFinite) || new Vector3(...state.position).distanceTo(new Vector3(...state.target)) < 0.001) return;
     this.camera.position.set(...state.position); this.controls.target.set(...state.target);
     this.controls.update(); this.markDirty();
+  }
+  /** Try the sources that failed to load again, without disturbing the ones that loaded. */
+  retrySources() {
+    if (this.disposed || !this.sourceErrors.size) return;
+    this.sourceErrors.clear();
+    void this.loadSources(++this.generation);
   }
   fit() {
     if (this.props.active === false) return;

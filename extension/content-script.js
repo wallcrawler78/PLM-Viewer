@@ -1,12 +1,18 @@
 import { isPlainAttachmentClick, recognizeAttachmentAction } from './attachment-action.js';
 
 let settings = { autoOpenAttachments: false };
-const SETTINGS_KEYS = ['viewerUrl', 'workspaceId', 'autoOpenAttachments'];
-chrome.storage.local.get(SETTINGS_KEYS).then(value => { settings = value; }).catch(() => {});
-chrome.storage.onChanged.addListener((changes, area) => {
-  if (area !== 'local') return;
-  for (const key of SETTINGS_KEYS) if (Object.hasOwn(changes, key)) settings[key] = changes[key].newValue;
-});
+// Extension storage is restricted to extension pages, so this page script never reads it.
+// The service worker returns only the three launch settings, and they are re-read whenever
+// the user comes back to this tab (for example after changing the options).
+function refreshSettings() {
+  chrome.runtime.sendMessage({ type: 'review-studio-launch-settings' }).then(value => {
+    if (value?.ok) settings = { viewerUrl: value.viewerUrl, workspaceId: value.workspaceId, autoOpenAttachments: value.autoOpenAttachments === true };
+  }).catch(() => {});
+}
+refreshSettings();
+addEventListener('focus', refreshSettings);
+addEventListener('pageshow', refreshSettings);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refreshSettings(); });
 
 function showFailure(message, originalHref) {
   document.getElementById('review-studio-launch-notice')?.remove();

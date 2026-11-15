@@ -118,6 +118,17 @@ export async function readDocumentBytes(response: Response, signal: AbortSignal,
   }
 }
 
+/** Check delivered bytes against the declared edition before anything renders or
+ * anchors to them. A source without a SHA-256 cannot be confirmed and is refused.
+ */
+export async function verifyDocumentSource(data: ArrayBuffer, expectedHash: string | undefined): Promise<void> {
+  if (typeof expectedHash !== 'string' || !/^[a-f0-9]{64}$/.test(expectedHash)) throw new Error('This document has no SHA-256 source hash, so its edition cannot be verified. It was not opened.');
+  if (!globalThis.crypto?.subtle) throw new Error('This browser context cannot verify source hashes. Open the viewer over HTTPS or on localhost.');
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  const actual = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+  if (actual !== expectedHash) throw new Error('The document bytes do not match this source edition. No other edition has been shown. Reopen the attachment.');
+}
+
 /** Bound the whole source acquisition, including headers. The owned controller
  * aborts the actual transport and the body reader on timeout or source changes.
  */
