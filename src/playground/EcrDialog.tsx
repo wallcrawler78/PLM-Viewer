@@ -1,5 +1,7 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {ArrowUpRight,Check,CheckCircle2,Download,FileText,Image,LoaderCircle,PackageCheck,X} from 'lucide-react';
+import {ArrowUpRight,Check,CheckCircle2,Download,FileText,Image,LoaderCircle,PackageCheck,Sparkles,X} from 'lucide-react';
+import {requestEcrDraft} from './assistant';
+import type {ConversationTurn,EcrDraft} from './assistant';
 import type {Proposal} from './types';
 import type {EcrCapture,EcrPackage,EcrReceipt} from './ecr';
 import {createEcrPackage,SimulatedEcrAdapter} from './ecr';
@@ -12,6 +14,9 @@ export interface EcrDialogProps {
   intentCaptures:EcrCapture[];
   captureDesign:(which?:'proposed'|'original')=>Promise<EcrCapture>;
   captureIntent?:()=>Promise<EcrCapture|null>;
+  /** This session's turns with the assistant, used only when the user asks Claude for a draft. */
+  conversation?:readonly ConversationTurn[];
+  assistantAvailable?:boolean;
   onClose:()=>void;
 }
 interface ItemGroup {key:string;itemId:string;itemNumber:string;revision:string;name:string;ids:string[];visibleIds:string[];changed:boolean;removed:boolean}
@@ -24,7 +29,10 @@ function safeReceiptUrl(receipt:EcrReceipt):string|null {
   try {const url=new URL(receipt.url);return url.protocol==='https:'&&!url.username&&!url.password?url.href:null;} catch{return null;}
 }
 
-export function EcrDialog({proposal,visibleNodeIds,intentCaptures,captureDesign,captureIntent,onClose}:EcrDialogProps) {
+export function EcrDialog({proposal,visibleNodeIds,intentCaptures,captureDesign,captureIntent,conversation=[],assistantAvailable=false,onClose}:EcrDialogProps) {
+  const [draft,setDraft]=useState<EcrDraft|null>(null),[drafting,setDrafting]=useState(false),[draftError,setDraftError]=useState('');
+  const draftController=useRef<AbortController|null>(null);
+  useEffect(()=>()=>draftController.current?.abort(),[]);
   const [title,setTitle]=useState(proposal.title);
   const [description,setDescription]=useState('');
   const [includeRoot,setIncludeRoot]=useState(false);
@@ -74,6 +82,17 @@ export function EcrDialog({proposal,visibleNodeIds,intentCaptures,captureDesign,
   });
   useEffect(()=>{if(result)dialog.current?.querySelector<HTMLElement>('[data-result-focus]')?.focus();},[result]);
 
+  /** Claude writes a suggestion from the accepted changes, markups and this session's conversation.
+   * It never replaces what the user has typed; the user chooses to use it and can edit it afterwards. */
+  async function draftWithClaude() {
+    if(drafting)return;
+    draftController.current?.abort();const controller=new AbortController();draftController.current=controller;
+    setDrafting(true);setDraftError('');
+    try{const result=await requestEcrDraft(proposal,{title,history:conversation,signal:controller.signal});if(!controller.signal.aborted)setDraft(result);}
+    catch(reason){if(!controller.signal.aborted)setDraftError(reason instanceof Error?reason.message:'Claude could not draft the description. Your text is unchanged.');}
+    finally{if(draftController.current===controller){setDrafting(false);draftController.current=null;}}
+  }
+  const useDraft=()=>{if(!draft)return;setTitle(draft.title.slice(0,300));setDescription([draft.description,...(draft.openQuestions.length?['','Open questions:',...draft.openQuestions.map(text=>`- ${text}`)]:[])].join('\n').slice(0,12000));setDraft(null);};
   const toggle=(key:string)=>setSelected(previous=>{const next=new Set(previous);next.has(key)?next.delete(key):next.add(key);return next;});
   const row=(group:ItemGroup)=><label className={`pg-ecr-item ${selected.has(group.key)?'is-selected':''}`} key={group.key}>
     <input type="checkbox" checked={selected.has(group.key)} disabled={busy} onChange={()=>toggle(group.key)} aria-label={`Include ${group.itemNumber} revision ${group.revision}`}/>
@@ -137,7 +156,14 @@ export function EcrDialog({proposal,visibleNodeIds,intentCaptures,captureDesign,
       </div>:<form className="pg-ecr-form" onSubmit={event=>{event.preventDefault();void createReview();}}>
         <p id="pg-ecr-description" className="pg-ecr-intro">Describe your proposal, review the affected items, and prepare the design evidence for an Arena ECR.</p>
         <div className="pg-ecr-preview-notice"><PackageCheck size={18}/><div><strong>Preview handoff</strong><p>This creates a test receipt and a complete local review package. Arena records and attachments will be written only after its live ECR connection is configured.</p></div></div>
-        <section className="pg-ecr-section"><h3><span>1</span> Describe the change</h3><label className="pg-field"><span>ECR title</span><input autoComplete="off" value={title} maxLength={300} onChange={event=>setTitle(event.target.value)} disabled={busy} placeholder="A short title for this request"/></label><label className="pg-field"><span>Change description</span><textarea value={description} maxLength={12000} rows={4} onChange={event=>setDescription(event.target.value)} disabled={busy} placeholder="What should change, and why? Include the design intent and anything the reviewers should consider."/><small>{description.length.toLocaleString()} / 12,000 characters</small></label></section>
+        <section className="pg-ecr-section"><h3><span>1</span> Describe the change</h3><label className="pg-field"><span>ECR title</span><input autoComplete="off" value={title} maxLength={300} onChange={event=>setTitle(event.target.value)} disabled={busy} placeholder="A short title for this request"/></label><label className="pg-field"><span>Change description</span><textarea value={description} maxLength={12000} rows={4} onChange={event=>setDescription(event.target.value)} disabled={busy} placeholder="What should change, and why? Include the design intent and anything the reviewers should consider."/><small>{description.length.toLocaleString()} / 12,000 characters</small></label>
+          {assistantAvailable&&<div className="pg-ecr-draft">
+            <button type="button" className="pg-button secondary" disabled={busy||drafting} onClick={()=>void draftWithClaude()}>{drafting?<LoaderCircle className="spin" size={14}/>:<Sparkles size={14}/>}{drafting?'Drafting…':draft?'Draft again with Claude':'Draft with Claude'}</button>
+            {drafting&&<button type="button" className="pg-text-button" onClick={()=>{draftController.current?.abort();setDrafting(false);}}>Cancel</button>}
+            <small>Sends the change list, markup instructions and this session's assistant conversation to Anthropic. Review the wording: Claude can misstate a change.</small>
+            {draftError&&<p className="pg-inline-error" role="alert">{draftError}</p>}
+            {draft&&<div className="pg-ecr-draft-card" role="region" aria-label="Suggested ECR wording"><span className="pg-section-label">SUGGESTED WORDING · NOT YET USED</span><strong>{draft.title}</strong><p>{draft.description}</p>{draft.openQuestions.length>0&&<><em>Open questions</em><ul>{draft.openQuestions.map((text,index)=><li key={index}>{text}</li>)}</ul></>}<div className="pg-button-row"><button type="button" className="pg-button pg-primary" onClick={useDraft}>{description.trim()?'Replace my text with this draft':'Use this draft'}</button><button type="button" className="pg-button" onClick={()=>setDraft(null)}>Discard</button></div></div>}
+          </div>}</section>
         <section className="pg-ecr-section"><div className="pg-ecr-section-title"><h3><span>2</span> Affected items</h3><span className="pg-count">{effectiveCount} selected</span></div><p>Items with proposed changes are selected. Add any other item reviewers should consider. Repeated occurrences of one item and revision share a single affected-item entry.</p><div className="pg-ecr-items">{displayedGroups.length?displayedGroups.map(row):<p className="pg-empty-small">No existing Arena items are currently visible.</p>}</div>{otherGroups.length>0&&<details className="pg-ecr-other-items"><summary>Other source items ({otherGroups.length})</summary><p>Hidden items and proposed removals are available to include explicitly.</p>{otherGroups.map(row)}</details>}<label className="pg-ecr-parent"><input type="checkbox" checked={includeRoot} disabled={busy} onChange={event=>setIncludeRoot(event.target.checked)}/><span>Also include parent assembly <strong>{proposal.context.itemNumber}</strong> · Rev {proposal.context.revision}</span></label>{conceptCount>0&&<p className="pg-ecr-concept-note">{conceptCount} unnumbered concept {conceptCount===1?'component is':'components are'} documented in the report. Assigning Arena item numbers is a separate workflow.</p>}</section>
         <section className="pg-ecr-section"><h3><span>3</span> Attach the design evidence</h3><div className="pg-ecr-evidence-list"><div><Image size={17}/><span><strong>Proposed design image</strong><small>Captured from the interactive 3D view when you create the ECR</small></span><Check size={16}/></div><div><Image size={17}/><span><strong>Markup and intent {capturedIntentCount===1?'image':'images'}</strong><small>{capturedIntentCount?`${capturedIntentCount} saved intent ${capturedIntentCount===1?'view':'views'} will be included with the original markup text and capture version`:proposal.annotations.length?'A marked view will be captured with your instructions':'No markups yet; the proposed design image will be included'}</small></span>{capturedIntentCount>0&&<Check size={16}/>}</div><div><FileText size={17}/><span><strong>Word description (.docx)</strong><small>Your description, affected items, changes, assumptions and embedded images</small></span><Check size={16}/></div></div></section>
         {error&&<div className="pg-inline-error" role="alert">{error}</div>}

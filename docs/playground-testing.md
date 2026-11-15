@@ -6,7 +6,7 @@ This guide tests the **0.8.0 source/package** and its private [hosted Preview](h
 
 | Evidence | Status |
 | --- | --- |
-| TypeScript and automated suite | Passed: `npm run check`, 704 tests in 59 test files. |
+| TypeScript and automated suite | Passed: `npm run check`, 722 tests in 59 test files. |
 | Final application/extension packaging | Passed: `npm run build:extension` for 0.8.0, including packaged local STEP/PDF assets. |
 | Generated Word report layout | Passed for the three-page test report after correcting a split table row and inspecting the rerender. This is report QA, not browser interaction evidence. |
 | Playground browser layout and interaction | Pending. Automatic approval review blocked the attempted browser validation. |

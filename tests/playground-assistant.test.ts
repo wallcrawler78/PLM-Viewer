@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { applyAssistantPlan, readAssistantStatus, requestAssistantPlan, validateAssistantPlan } from '../src/playground/assistant';
+import { applyAssistantPlan, readAssistantStatus, requestAssistantPlan, requestEcrDraft, validateAssistantPlan } from '../src/playground/assistant';
 import { applyCommands, createHistory, createProposal } from '../src/playground/state';
 
 const proposal = () => createProposal({ workspaceId: 'w', snapshotId: 'snap', rootItemId: 'assembly', itemNumber: '100', name: 'Assembly', revision: 'A', sourceMode: 'preview' }, [{ id: 'occ-a', itemId: 'item-a', itemNumber: '100-1', revision: 'A', sourceHash: 'a'.repeat(64), name: 'Bracket', position: [0, 0, 0], color: '#999999' }]);
@@ -56,6 +56,38 @@ describe('Playground assistant client', () => {
     const fetcher = claude(wirePlan);
     await expect(requestAssistantPlan(proposal(), 'Move', { image, imageContext: { kind: 'model', camera: { position: [1, 1, 1], target: [0, 0, 0] } } }, fetcher)).rejects.toMatchObject({ code: 'FORBIDDEN', message: expect.stringContaining('Image sharing is turned off') });
     expect(fetcher).not.toHaveBeenCalled();
+  });
+  it('sends earlier turns with a follow-up so it can be understood, bounded and without the key', async () => {
+    extensionPage({ assistantApiKey: 'sk-ant-test-key' });
+    const fetcher = claude(wirePlan);
+    const history = [{ role: 'user' as const, text: 'Raise the bracket 5 mm' }, { role: 'assistant' as const, text: 'Raise bracket by 5 mm.', outcome: 'applied' as const }, ...Array.from({ length: 30 }, (_, i) => ({ role: 'user' as const, text: `older turn ${i}` }))];
+    await requestAssistantPlan(proposal(), 'A bit more', { history }, fetcher);
+    const scene = JSON.parse(JSON.parse(fetcher.mock.calls[0][1]!.body as string).messages[0].content[0].text);
+    expect(scene.prompt).toBe('A bit more');
+    expect(scene.history).toHaveLength(20);
+    expect(scene.history.at(-1)).toEqual({ role: 'user', text: 'older turn 29' });
+    await requestAssistantPlan(proposal(), 'First request', {}, fetcher);
+    expect(JSON.parse(JSON.parse(fetcher.mock.calls[1][1]!.body as string).messages[0].content[0].text).history).toBeUndefined();
+  });
+  it('drafts ECR wording from accepted changes, numbered markups and the conversation, as a suggestion only', async () => {
+    extensionPage({ assistantApiKey: 'sk-ant-test-key' });
+    const moved = applyCommands(createHistory(proposal()), [{ type: 'transform', nodeId: 'occ-a', position: [0, 0, 5] }]).present;
+    const draft = { title: 'Raise bracket 100-1 by 5 mm', description: '100-1: raise by 5 mm. Reason not stated.', openQuestions: ['Confirm fastener length.'] };
+    const fetcher = claude(draft);
+    const result = await requestEcrDraft(moved, { title: 'Working title', history: [{ role: 'user', text: 'Raise it 5 mm to clear the cable' }, { role: 'assistant', text: 'Hide the cover.', outcome: 'dismissed' }] }, fetcher);
+    expect(result).toEqual(draft);
+    const sent = JSON.parse(fetcher.mock.calls[0][1]!.body as string), material = JSON.parse(sent.messages[0].content[0].text);
+    expect(sent.system).toContain('engineering change request');
+    expect(material.changes).toEqual([{ component: '100-1 — Bracket', revision: 'A', kind: 'modified', summary: expect.stringContaining('position [0, 0, 0] → [0, 0, 5] mm') }]);
+    expect(material.history[1]).toEqual({ role: 'assistant', text: 'Hide the cover.', outcome: 'dismissed' });
+    expect(fetcher.mock.calls[0][1]!.body).not.toContain('sk-ant-test-key');
+    // No source geometry, hashes or delivery URLs are part of the drafting request.
+    expect(Object.keys(material).sort()).toEqual(['assumptions', 'changes', 'context', 'history', 'markups', 'title']);
+    await expect(requestEcrDraft(proposal(), { title: 't' }, fetcher)).rejects.toMatchObject({ code: 'INVALID_REQUEST' });
+    await expect(requestEcrDraft(moved, { title: 't' }, claude({ title: 'x', description: '', openQuestions: [] }))).rejects.toMatchObject({ code: 'INVALID_PLAN' });
+    await expect(requestEcrDraft(moved, { title: 't' }, claude({ ...draft, script: 'alert(1)' }))).rejects.toMatchObject({ code: 'INVALID_PLAN' });
+    vi.stubGlobal('location', { protocol: 'https:' });
+    await expect(requestEcrDraft(moved, { title: 't' }, fetcher)).rejects.toMatchObject({ code: 'UNCONFIGURED' });
   });
   it('handles static hosting as unconfigured without a pretend AI response', async () => {
     const fetcher = vi.fn(async () => new Response('<html>Static viewer</html>', { headers: { 'content-type': 'text/html' } }));

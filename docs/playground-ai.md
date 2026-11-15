@@ -53,6 +53,12 @@ The extension has no server. A user enables the assistant by saving their own Cl
 | Images | Sent only when the user turns on image sharing in the options and also chooses to attach a view to that request. |
 | Limits | The same 200 components, 100 marks, 40 commands, 4 MiB body and 95-second deadline as the gateway. There is no request budget: spend is limited only by the key's own limits. |
 
+### Conversation and ECR drafting
+
+- **Follow-up requests.** The Playground keeps the turns of the current session (what was asked, what was suggested, and whether it was applied or dismissed) in memory. Up to 20 earlier turns of at most 2,000 characters are sent with each request so that "a bit more" or "the same on the other side" can be understood. The current scene remains the authority for state. The conversation is not saved with the proposal and is cleared on reload, on **Clear**, or when a proposal is opened from a file.
+- **Draft with Claude.** In the Create ECR dialog, in the extension with a saved key, the user can ask for suggested wording. The request sends the product context, the accepted change summaries (source value, proposed value, delta), the numbered markup instructions, stated assumptions and the session's turns. It sends no geometry, images, source hashes or delivery URLs. The reply is a title, a description and open questions, shown as a suggestion that is not used until the user chooses it; it never overwrites typed text on its own and stays editable. Claude is instructed to leave out display-only actions and dismissed ideas and not to invent dimensions or reasons, but the wording must still be reviewed.
+- Suggested geometry changes are still applied only after the user reviews them and chooses **Apply suggestion**.
+
 What a user should know before saving a key:
 
 - The key is stored unencrypted in the Chrome profile. Anyone who can use that profile, or malware on the machine, can read or use it. Use a dedicated key with a spend limit and revoke it when it is no longer needed.

@@ -44,7 +44,7 @@ Creation errors keep the user's description and selection. A retry of the same p
 
 ## Verification recorded for 0.8
 
-`npm run check` passed: **704 tests in 59 test files**, including TypeScript. `npm run build:extension` also passed for 0.8.0. The generated Word test report was rendered to three pages and inspected; a table-row split was corrected and the report rerendered. Report layout QA is separate from browser interaction QA.
+`npm run check` passed: **722 tests in 59 test files**, including TypeScript. `npm run build:extension` also passed for 0.8.0. The generated Word test report was rendered to three pages and inspected; a table-row split was corrected and the report rerendered. Report layout QA is separate from browser interaction QA.
 
 Automatic approval review blocked the attempted browser validation, so **Playground visual/interaction QA and installed-Chrome QA remain pending manual gates**. No successful browser screenshots or extension installation are claimed for this release. Historical 0.7 browser/performance records retain their original scope. No authenticated live AI request, tenant attachment-click flow or live Arena ECR write was tested.
 

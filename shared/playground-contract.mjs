@@ -1,6 +1,6 @@
 /** Fixed data contract for AI-assisted visual proposals. No executable output is accepted.
  * Runs unchanged in Node and in the browser: no Node-only APIs. */
-export const ASSISTANT_LIMITS = Object.freeze({ requestBytes: 4 * 1024 * 1024, responseBytes: 512 * 1024, imageBytes: 2 * 1024 * 1024, nodes: 200, annotations: 100, commands: 40, timeoutMs: 90_000 });
+export const ASSISTANT_LIMITS = Object.freeze({ requestBytes: 4 * 1024 * 1024, responseBytes: 512 * 1024, imageBytes: 2 * 1024 * 1024, nodes: 200, annotations: 100, commands: 40, historyTurns: 20, timeoutMs: 90_000 });
 
 export class PlaygroundError extends Error {
   constructor(code = 'INVALID_REQUEST') { super(code); this.name = 'PlaygroundError'; this.code = code; }
@@ -110,8 +110,54 @@ function presentation(value, nodeIds) {
   }
 }
 
+/** Earlier turns of the same Playground session, oldest first. Plain text only. */
+function history(value) {
+  list(value, ASSISTANT_LIMITS.historyTurns).forEach(turn => {
+    keys(turn, ['role', 'text', 'outcome']);
+    if (!['user', 'assistant'].includes(turn.role)) fail();
+    text(turn.text, 2000);
+    if (turn.outcome !== undefined && !['applied', 'dismissed', 'question', 'pending'].includes(turn.outcome)) fail();
+  });
+}
+function sourceContext(value) {
+  keys(value, ['workspaceId', 'snapshotId', 'configurationId', 'rootItemId', 'itemNumber', 'name', 'revision', 'sourceMode']);
+  for (const key of ['workspaceId', 'snapshotId', 'rootItemId', 'itemNumber', 'name', 'revision']) text(value[key]);
+  if (value.configurationId !== undefined) text(value.configurationId);
+  if (!['preview', 'arena'].includes(value.sourceMode)) fail();
+}
+
+/** What Claude is given to draft an ECR description: accepted changes, markup instructions and the session's turns. */
+export function validateEcrDraftRequest(input) {
+  keys(input, ['context', 'title', 'changes', 'markups', 'assumptions', 'history']);
+  sourceContext(input.context); text(input.title, 300);
+  list(input.changes, ASSISTANT_LIMITS.nodes).forEach(change => {
+    keys(change, ['component', 'revision', 'kind', 'summary']);
+    text(change.component, 400); if (change.revision !== undefined) text(change.revision);
+    if (!['added', 'removed', 'modified'].includes(change.kind)) fail();
+    text(change.summary, 4000);
+  });
+  list(input.markups, ASSISTANT_LIMITS.annotations).forEach(mark => {
+    keys(mark, ['number', 'type', 'instruction', 'source']);
+    number(mark.number, 1, 1000); if (!Number.isInteger(mark.number)) fail();
+    if (!['arrow', 'rect', 'ellipse', 'pen', 'note', 'pin'].includes(mark.type)) fail();
+    text(mark.instruction, 4000, true); text(mark.source, 400);
+  });
+  strings(input.assumptions); history(input.history ?? []);
+  if (!input.changes.length && !input.markups.length) fail();
+  return input;
+}
+export function validateEcrDraft(input) {
+  try {
+    keys(input, ['title', 'description', 'openQuestions']);
+    text(input.title, 300); text(input.description, 12000);
+    list(input.openQuestions, 10).forEach(value => text(value, 1000));
+    return input;
+  } catch (error) { if (error instanceof PlaygroundError) throw new PlaygroundError('INVALID_PLAN'); throw error; }
+}
+
 export function validateAssistantRequest(input) {
-  keys(input, ['proposalId', 'proposalVersion', 'sourceKey', 'context', 'selectedId', 'prompt', 'baseline', 'nodes', 'annotations', 'annotationIds', 'image', 'imageContext']);
+  keys(input, ['proposalId', 'proposalVersion', 'sourceKey', 'context', 'selectedId', 'prompt', 'baseline', 'nodes', 'annotations', 'annotationIds', 'image', 'imageContext', 'history']);
+  if (input.history !== undefined) history(input.history);
   text(input.proposalId); text(input.sourceKey, 1024 * 1024); text(input.prompt, 8000);
   number(input.proposalVersion, 0, Number.MAX_SAFE_INTEGER);
   if (!Number.isSafeInteger(input.proposalVersion)) fail();
@@ -202,3 +248,5 @@ export const ASSISTANT_PLAN_SCHEMA = obj({
   assumptions: { type: 'array', items: str }, questions: { type: 'array', items: str },
   display: obj({ explode: num, labels: { type: 'boolean' }, view: { type: 'string', enum: ['proposed', 'original', 'overlay'] }, hiddenIds: { type: 'array', items: str } }, []),
 });
+
+export const ECR_DRAFT_SCHEMA = obj({ title: str, description: str, openQuestions: { type: 'array', items: str } });

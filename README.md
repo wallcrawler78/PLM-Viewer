@@ -29,7 +29,7 @@ The assistant connection is optional. Local manual tools and the Preview ECR flo
 
 Preview proposal drafts save locally to the browser origin; live Arena proposals remain session drafts. Captured images and simulated receipts are session data, so use **Download review package** when you want to retain that evidence. Export/import of proposal JSON preserves scene intent and exact source binding without copying the original STEP/PDF/DOCX attachments.
 
-**Verification:** `npm run check` passed for 0.8.0 with **704 tests in 59 test files**, including TypeScript. `npm run build:extension` also passed for the 0.8.0 package. Browser interaction/layout and installed-Chrome qualification remain **pending manual gates**: automatic approval review blocked the attempted browser validation. No authenticated live AI call or live Arena ECR creation has been tested. Existing historical browser results apply to their recorded release, not to Playground.
+**Verification:** `npm run check` passed for 0.8.0 with **722 tests in 59 test files**, including TypeScript. `npm run build:extension` also passed for the 0.8.0 package. Browser interaction/layout and installed-Chrome qualification remain **pending manual gates**: automatic approval review blocked the attempted browser validation. No authenticated live AI call or live Arena ECR creation has been tested. Existing historical browser results apply to their recorded release, not to Playground.
 
 Use [the Playground test guide](docs/playground-testing.md) for a concrete local/Chrome walkthrough and [the implementation plan](docs/playground-plan.md) for delivered versus remaining phases.
 
@@ -144,7 +144,7 @@ Document-first sessions defer the 3D engine until a model is opened and the Word
 | Playground proposals | Separate source baseline and proposed web 3D representation, occurrence-level transforms, parameterized concepts, original/proposed/overlay, bounded history, exact-source draft export/import |
 | Playground design intent | Model/PDF drawing tools, geometry/camera-aware anchors, frozen intent captures, source-bound reference documents, and editable text or browser dictation |
 | Preview ECR preparation | Description dialog, affected-item selection, actual rendered images, local DOCX report, manifest/ZIP export and an explicit simulated receipt; no live Arena write |
-| Optional Playground AI | Typed bounded commands, source/version guards, cancellation, explicit image sharing and user-reviewed application. In the installed extension it calls the Claude API directly with the user's own key saved in the options; in local web development it can use the server gateway. No live request has been verified with a real key |
+| Optional Playground AI | Typed bounded commands, source/version guards, cancellation, explicit image sharing, session conversation for follow-up requests, suggested ECR wording, and user-reviewed application. In the installed extension it calls the Claude API directly with the user's own key saved in the options; in local web development it can use the server gateway. No live request has been verified with a real key |
 | Arena MCP integration | Server-only MCP SDK client, OAuth discovery/PKCE runtime, per-user session bridge, protected exact-source file delivery, schema/BOM/revision/attachment/supplier bindings, live launch loading, access-change clearing, and a Chrome launch extension; verified vendor mappings and production configuration remain required |
 
 ## Included test assembly

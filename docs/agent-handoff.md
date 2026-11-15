@@ -8,7 +8,7 @@ The public 0.7 import was commit `048746c37555c9f46ecb2f7144446aa4b91092ad`, ori
 
 | Check | 0.8 result |
 | --- | --- |
-| TypeScript and tests | `npm run check` passed: **704 tests in 59 test files**. |
+| TypeScript and tests | `npm run check` passed: **722 tests in 59 test files**. |
 | Application and Chrome build | `npm run build:extension` passed for 0.8.0; the build reported 282 packaged files, 6.76 MiB, with the local STEP/PDF assets. |
 | Generated Word report | The test report was rendered to three pages and all pages inspected; a table-row split was corrected and the report rerendered. This is artifact layout QA, not a Playground browser screenshot. |
 | Browser visual/interaction and installed Chrome | **Pending manual qualification.** Automatic approval review blocked the attempted browser validation. No successful Playground browser/install run is claimed. |

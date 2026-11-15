@@ -2,7 +2,7 @@
  * The user's own Claude API key is saved in the extension options and read here, in the
  * viewer page, for each request. Requests go only to the fixed Anthropic Messages endpoint.
  * The key is never written to proposal data, review data, logs, or a launch URL. */
-import { ASSISTANT_ERRORS, PlaygroundError, stampAssistantConcepts, validateAssistantPlan as validateWirePlan, validateAssistantRequest } from '../../shared/playground-contract.mjs';
+import { ASSISTANT_ERRORS, PlaygroundError, stampAssistantConcepts, validateAssistantPlan as validateWirePlan, validateAssistantRequest, validateEcrDraftRequest } from '../../shared/playground-contract.mjs';
 import { createAnthropicAssistant } from '../../shared/playground-provider.mjs';
 
 export const ASSISTANT_SETTING_KEYS = ['assistantApiKey', 'assistantModel', 'assistantShareImages'] as const;
@@ -38,6 +38,14 @@ export class ExtensionAssistantFailure extends Error {
   constructor(readonly code: string, message: string) { super(message); }
 }
 
+function failure(error: unknown): ExtensionAssistantFailure {
+  const code = error instanceof PlaygroundError ? error.code : 'UPSTREAM_ERROR';
+  const message = code === 'FORBIDDEN' ? 'Image sharing is turned off in the extension options. Turn it on there, or send the request without an image.'
+    : code === 'UPSTREAM_ERROR' ? 'Claude could not be reached or did not complete this request. Check your network connection and the model ID in the extension options. Nothing was changed.'
+    : (ASSISTANT_ERRORS[code] ?? ASSISTANT_ERRORS.UPSTREAM_ERROR)[1];
+  return new ExtensionAssistantFailure(code, message);
+}
+
 /** Validate, send, and validate again. Returns the same wire shape the server route returns. */
 export async function proposeFromExtension(body: Record<string, unknown>, settings: ExtensionAssistantSettings, options: { signal?: AbortSignal; fetcher?: typeof fetch } = {}): Promise<Record<string, unknown>> {
   try {
@@ -48,10 +56,19 @@ export async function proposeFromExtension(body: Record<string, unknown>, settin
     return { requestId: crypto.randomUUID(), proposalId: request.proposalId, proposalVersion: request.proposalVersion, sourceKey: request.sourceKey, ...plan };
   } catch (error) {
     if (options.signal?.aborted) throw error;
-    const code = error instanceof PlaygroundError ? error.code : 'UPSTREAM_ERROR';
-    const message = code === 'FORBIDDEN' ? 'Image sharing is turned off in the extension options. Turn it on there, or send the request without an image.'
-      : code === 'UPSTREAM_ERROR' ? 'Claude could not be reached or did not complete this request. Check your network connection and the model ID in the extension options. Your proposal is unchanged.'
-      : (ASSISTANT_ERRORS[code] ?? ASSISTANT_ERRORS.UPSTREAM_ERROR)[1];
-    throw new ExtensionAssistantFailure(code, message);
+    throw failure(error);
+  }
+}
+
+export interface EcrDraft { title: string; description: string; openQuestions: string[]; }
+/** Ask Claude to draft the ECR wording. The result is a suggestion the user edits and accepts; nothing is submitted. */
+export async function draftEcrFromExtension(body: Record<string, unknown>, settings: ExtensionAssistantSettings, options: { signal?: AbortSignal; fetcher?: typeof fetch } = {}): Promise<EcrDraft> {
+  try {
+    const request = validateEcrDraftRequest(body);
+    const assistant = createAnthropicAssistant({ apiKey: settings.apiKey, model: settings.model, directBrowser: true, ...(options.fetcher ? { fetcher: options.fetcher } : {}) });
+    return await assistant.draftEcr(request, { signal: options.signal });
+  } catch (error) {
+    if (options.signal?.aborted) throw error;
+    throw failure(error);
   }
 }
