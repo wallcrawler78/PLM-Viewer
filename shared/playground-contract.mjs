@@ -82,8 +82,8 @@ function annotation(value) {
   list(value.points, 512).forEach(point => { if (!Array.isArray(point) || point.length !== 2) fail(); point.forEach(v => number(v, 0, 1)); });
   if (!value.points.length) fail();
   if (value.target?.type === 'view') {
-    keys(value.target, ['type', 'camera', 'sceneKey', 'geometryKey']); camera(value.target.camera);
-    for (const key of ['sceneKey', 'geometryKey']) if (value.target[key] !== undefined) { text(value.target[key], 256); if (/[\u0000-\u001f\u007f]/.test(value.target[key])) fail(); }
+    keys(value.target, ['type', 'camera', 'sceneKey', 'geometryKey', 'presentationKey']); camera(value.target.camera);
+    for (const key of ['sceneKey', 'geometryKey', 'presentationKey']) if (value.target[key] !== undefined) { text(value.target[key], 256); if (/[\u0000-\u001f\u007f]/.test(value.target[key])) fail(); }
   }
   else if (value.target?.type === 'document') documentIdentity(value.target, true);
   else fail();

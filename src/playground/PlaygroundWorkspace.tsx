@@ -11,7 +11,7 @@ import PlaygroundViewport from './PlaygroundViewport';
 import type { PlaygroundViewportHandle, PlaygroundPresentation, PlaygroundInteraction, PlaygroundSceneStatus } from './PlaygroundViewport';
 import { MarkupLayer } from './MarkupLayer';
 import type { MarkupTool } from './MarkupLayer';
-import { compositeMarkup, visibleMarkupPoints, markupSceneKey, markupGeometryKey } from './markup';
+import { compositeMarkup, visibleMarkupPoints, markupPresentationKey,markupSceneKey, markupGeometryKey } from './markup';
 import { PlaygroundDocument } from './PlaygroundDocument';
 import type { PlaygroundDocumentHandle } from './PlaygroundDocument';
 import { useDictation } from './useDictation';
@@ -46,7 +46,7 @@ function ProposalWorkspace({active=true,snapshot,sourceMode,connectionId,initial
   const [initial]=useState(()=>{if(sourceMode==='arena')return {proposal:seed,revision:0,error:''};try{const saved=store.current.load(seed);return {proposal:saved.proposal??seed,revision:saved.revision,error:''};}catch(error){return {proposal:seed,revision:0,error:message(error)};}});
   const [history,setHistory]=useState(()=>createHistory(initial.proposal)),historyRef=useRef(history);historyRef.current=history;
   const proposal=history.present;
-  const storageRevision=useRef(initial.revision),savedVersion=useRef(initial.revision?proposal.version:-1);
+  const storageRevision=useRef(initial.revision),savedVersion=useRef(proposal.version);
   const [storageError,setStorageError]=useState(initial.error),storageErrorRef=useRef(initial.error);storageErrorRef.current=storageError;
   const [saveState,setSaveState]=useState(sourceMode==='arena'?'Session draft':'Saved in this browser');
   const [presentation,setPresentation]=useState<PlaygroundPresentation>(initialPresentation);
@@ -80,14 +80,17 @@ function ProposalWorkspace({active=true,snapshot,sourceMode,connectionId,initial
   const markedModelViews=proposal.annotations.filter(mark=>mark.target.type==='view');
   const modelSceneKey=useMemo(()=>markupSceneKey(presentation.view==='original'?proposal.baseline:proposal.nodes,presentation),[proposal.baseline,proposal.nodes,presentation]);
   const modelGeometryKey=useMemo(()=>markupGeometryKey(presentation.view==='original'?proposal.baseline:proposal.nodes),[proposal.baseline,proposal.nodes,presentation.view]);
-  const visibleModelMarks=markedModelViews.flatMap(mark=>{const points=visibleMarkupPoints(mark,camera,(id,point)=>viewport.current?.project(id,point)??null,modelSceneKey,modelGeometryKey);return points?[{mark,points}]:[];});
+  const modelPresentationKey=useMemo(()=>markupPresentationKey(presentation),[presentation]);
+  // One number per markup everywhere: the list, the canvas, captured images and the ECR document.
+  const markNumber=(id:string)=>proposal.annotations.findIndex(mark=>mark.id===id)+1;
+  const visibleModelMarks=markedModelViews.flatMap(mark=>{const points=visibleMarkupPoints(mark,camera,(id,point)=>viewport.current?.project(id,point)??null,modelSceneKey,modelGeometryKey,modelPresentationKey);return points?[{mark,points,number:markNumber(mark.id)}]:[];});
   const hiddenMarkCount=markedModelViews.length-visibleModelMarks.length;
   const projectionChanged=useCallback(()=>{if(historyRef.current.present.annotations.some(mark=>mark.target.type==='view'))setProjection(value=>value+1);},[]);
   const tell=(text:string,error=false)=>setNotice({text,error});
 
   useEffect(()=>{if(!notice)return;const timer=setTimeout(()=>setNotice(null),notice.error?12000:5500);return()=>clearTimeout(timer);},[notice]);
   useEffect(()=>{
-    if(sourceMode==='arena'||storageError)return;
+    if(sourceMode==='arena'||storageError||savedVersion.current===proposal.version)return;
     setSaveState('Saving draft…');
     const timer=setTimeout(()=>{try{storageRevision.current=store.current.save(proposal,storageRevision.current);savedVersion.current=proposal.version;setSaveState('Saved in this browser');}catch(error){setStorageError(message(error));setSaveState('Session draft');}},350);
     return()=>clearTimeout(timer);
@@ -110,7 +113,7 @@ function ProposalWorkspace({active=true,snapshot,sourceMode,connectionId,initial
   function toggleVisible(id:string){setPresentation(current=>({...current,hiddenIds:current.hiddenIds.includes(id)?current.hiddenIds.filter(value=>value!==id):[...current.hiddenIds,id]}));}
   function snapshotModelMarks(current:Proposal,view:PlaygroundPresentation,captureCamera:CameraState){
     const displayed=view.view==='original'?current.baseline:current.nodes,sceneKey=markupSceneKey(displayed,view),geometryKey=markupGeometryKey(displayed);
-    return current.annotations.filter(mark=>mark.target.type==='view').flatMap(mark=>{const points=visibleMarkupPoints(mark,captureCamera,(id,point)=>viewport.current?.project(id,point)??null,sceneKey,geometryKey);return points?[{mark:structuredClone(mark),points:structuredClone(points)}]:[];});
+    return current.annotations.filter(mark=>mark.target.type==='view').flatMap(mark=>{const points=visibleMarkupPoints(mark,captureCamera,(id,point)=>viewport.current?.project(id,point)??null,sceneKey,geometryKey,markupPresentationKey(view));return points?[{mark:structuredClone(mark),points:structuredClone(points),number:current.annotations.findIndex(value=>value.id===mark.id)+1}]:[];});
   }
   async function captureIntent(requireMarkup=false):Promise<EcrCapture|null>{
     const current=historyRef.current.present,version=current.version,sourceKey=current.sourceKey;
@@ -119,22 +122,23 @@ function ProposalWorkspace({active=true,snapshot,sourceMode,connectionId,initial
       const result=await documentView.current.capture();
       const marks=structuredClone(current.annotations.filter(mark=>mark.target.type==='document'&&mark.target.fileId===result.target.fileId&&mark.target.itemId===result.target.itemId&&mark.target.revision===result.target.revision&&mark.target.edition===result.target.edition&&mark.target.sourceHash===result.target.sourceHash&&mark.target.page===result.target.page));
       if(requireMarkup&&!marks.length)throw new Error('Open a marked PDF page before capturing the ECR intent image. Saved intent views can also be used.');
-      return {kind:'intent',name:`drawing-intent-${intentCaptures.length+1}.png`,imageDataUrl:result.image,proposalVersion:version,sourceKey,annotations:marks,annotationIds:marks.map(mark=>mark.id),document:result.target};
+      return {kind:'intent',name:`drawing-intent-${intentCaptures.length+1}.png`,imageDataUrl:result.image,proposalVersion:version,sourceKey,annotations:marks,annotationIds:marks.map(mark=>mark.id),annotationNumbers:marks.map(mark=>current.annotations.findIndex(value=>value.id===mark.id)+1),document:result.target};
     }
     if(!viewport.current)return null;
     const captureCamera=structuredClone(viewport.current.getCamera()),view=structuredClone(presentationRef.current),shown=snapshotModelMarks(current,view,captureCamera);
     if(requireMarkup&&!shown.length)throw new Error('Return to a marked model view or open a marked PDF page. This view has no visible intent marks to attach.');
     const image=await viewport.current.capture();
-    return {kind:'intent',name:`model-intent-${intentCaptures.length+1}.png`,imageDataUrl:await compositeMarkup(image,shown,1280),camera:captureCamera,proposalVersion:version,sourceKey,annotations:shown.map(entry=>entry.mark),annotationIds:shown.map(entry=>entry.mark.id),presentation:view};
+    return {kind:'intent',name:`model-intent-${intentCaptures.length+1}.png`,imageDataUrl:await compositeMarkup(image,shown,1280),camera:captureCamera,proposalVersion:version,sourceKey,annotations:shown.map(entry=>entry.mark),annotationIds:shown.map(entry=>entry.mark.id),annotationNumbers:shown.map(entry=>entry.number),presentation:view};
   }
-  async function saveIntent(){setCaptureBusy(true);try{const capture=await captureIntent();if(capture){setIntentCaptures(list=>[...list,capture].slice(-2));tell('Intent view captured for the ECR package.');}}catch(error){tell(message(error),true);}finally{setCaptureBusy(false);}}
-  async function captureDesign():Promise<EcrCapture>{
+  async function saveIntent(){setCaptureBusy(true);try{const capture=await captureIntent();if(capture){setIntentCaptures(list=>[...list,capture].slice(-2));const count=capture.annotations?.length??0;tell(count?`Intent view captured with ${count} markup${count===1?'':'s'} for the ECR package.`:'View captured, but it shows no markups. Draw on this view, or return to a marked view, to record design intent.',!count);}}catch(error){tell(message(error),true);}finally{setCaptureBusy(false);}}
+  /** The whole assembled configuration with every part shown, whatever is hidden or exploded on screen. */
+  async function captureDesign(which:'proposed'|'original'='proposed'):Promise<EcrCapture>{
     const previous=presentationRef.current,current=historyRef.current.present;
     try{
-      const view={...previous,view:'proposed' as const,explode:0,labels:true};setPresentation(view);await frame();await frame();
+      const view={...previous,view:which,explode:0,labels:true,hiddenIds:[],opacityById:{}};setPresentation(view);await frame();await frame();
       if(!viewport.current)throw new Error('The scene is unavailable.');
       const captureCamera=structuredClone(viewport.current.getCamera()),image=await viewport.current.capture();
-      return {kind:'proposed',name:'proposed-design.png',imageDataUrl:await compositeMarkup(image,[],1280),camera:captureCamera,proposalVersion:current.version,sourceKey:current.sourceKey,presentation:structuredClone(view)};
+      return {kind:which==='original'?'baseline':'proposed',name:which==='original'?'source-design.png':'proposed-design.png',imageDataUrl:await compositeMarkup(image,[],1280),camera:captureCamera,proposalVersion:current.version,sourceKey:current.sourceKey,presentation:structuredClone(view)};
     }finally{setPresentation(previous);}
   }
   async function askAssistant(text=prompt,annotationIds?:string[]){
@@ -176,7 +180,7 @@ function ProposalWorkspace({active=true,snapshot,sourceMode,connectionId,initial
           {documentsOpen&&<section className="pg-document-pane" aria-label="Playground reference document"><div className="pg-document-heading"><FileText size={16}/><select aria-label="Reference document" value={fileKey} onChange={event=>{setFileKey(event.target.value);setFocusPage(undefined);setScope('document');}}>{snapshot.documents.map(file=><option key={attachmentIdentityKey(file)} value={attachmentIdentityKey(file)}>{file.name} · Rev {file.revision}</option>)}</select><Icon label="Close reference document" onClick={()=>{setDocumentsOpen(false);setScope('model');}}><X size={15}/></Icon></div>{file?<PlaygroundDocument key={attachmentIdentityKey(file)} ref={documentView} file={file} tool={scope==='document'?tool:'select'} color={markupColor} marks={proposal.annotations} selectedId={selectedMarkId} onSelect={selectMarkup} onChange={upsertMarkup} onInteractionChange={setMarkDragging} onActivate={()=>setScope('document')} focusPage={focusPage}/>:<div className="pg-empty"><FileText size={30}/><h3>No reference documents</h3><p>This exact item revision has no available PDF or Word attachment.</p></div>}</section>}
           <div className="pg-stage" onPointerDownCapture={()=>{if(scope!=='model')setScope('model');}}>
             <PlaygroundViewport ref={viewport} sources={sources} nodes={proposal.nodes} baseline={proposal.baseline} selectedId={selectedId} onSelect={selectNode} active={active} onTransform={(nodeId,position,rotation)=>commit([{type:'transform',nodeId,position,rotation}],'Updated component placement')} presentation={presentation} interaction={markDragging||tool!=='select'&&scope==='model'?'draw':interaction} onCameraChange={setCamera} onStatus={setSceneStatus} onProjectionChange={projectionChanged}/>
-            <MarkupLayer tool={scope==='model'?tool:'select'} target={{type:'view',camera,sceneKey:modelSceneKey,geometryKey:modelGeometryKey}} color={markupColor} marks={visibleModelMarks} selectedId={selectedMarkId} onSelect={selectMarkup} onChange={upsertMarkup} pick={(u,v)=>viewport.current?.pick(u,v)??null} disabled={!!sceneStatus?.loading} onInteractionChange={setMarkDragging}/>
+            <MarkupLayer tool={scope==='model'?tool:'select'} target={{type:'view',camera,sceneKey:modelSceneKey,geometryKey:modelGeometryKey,presentationKey:modelPresentationKey}} color={markupColor} marks={visibleModelMarks} selectedId={selectedMarkId} onSelect={selectMarkup} onChange={upsertMarkup} pick={(u,v)=>viewport.current?.pick(u,v)??null} disabled={!!sceneStatus?.loading} onInteractionChange={setMarkDragging}/>
             <div className="pg-stage-meta"><span><i/>{presentation.view==='original'?'SOURCE CONFIGURATION':presentation.view==='overlay'?'ORIGINAL + PROPOSED':'PROPOSED CONFIGURATION'}</span><small>{presentation.explode>0?'Exploded for review':`${visibleNodes.length} components in view`}</small></div>
             {tool!=='select'&&scope==='model'&&<div className="pg-drawing-hint">{tool==='arrow'?'Start at the feature, point to its intended destination':tool==='pin'||tool==='note'?'Click to place your label':'Drag to mark this view'}<span>Camera held while drawing · Esc to finish</span></div>}
             {!sources.length&&!proposal.nodes.length&&<div className="pg-stage-empty"><Box size={38}/><h3>Start a visual proposal</h3><p>This source has no placed 3D components. Add a concept and keep its drawing alongside.</p><button className="pg-button pg-primary" onClick={()=>addConcept('bracket')}><Plus size={15}/>Add a bracket</button></div>}

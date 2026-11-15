@@ -11,6 +11,8 @@ export interface EcrCapture {
   proposalVersion?:number;
   sourceKey?:string;
   annotations?:PlaygroundAnnotation[];
+  /** The number drawn beside each captured markup in the image, in the same order as `annotations`. */
+  annotationNumbers?:number[];
   /** Historical concept anchors can outlive an Undo that removed their scene node. */
   unresolvedAnchorNodeIds?:string[];
   document?:Extract<AnnotationTarget,{type:'document'}>;
@@ -106,7 +108,7 @@ export function affectedItemsForProposal(proposal:Proposal,nodeIds:string[]=prop
 
 function capture(input:EcrCapture,proposal:Proposal):EcrCapture {
   if(!input||typeof input!=='object'||!['baseline','proposed','intent'].includes(input.kind)) throw new Error('Capture type is invalid.');
-  if(Object.keys(input).some(key=>!['kind','name','imageDataUrl','camera','annotationIds','proposalVersion','sourceKey','annotations','unresolvedAnchorNodeIds','document','presentation'].includes(key))) throw new Error('Capture metadata contains an unsupported field.');
+  if(Object.keys(input).some(key=>!['kind','name','imageDataUrl','camera','annotationIds','proposalVersion','sourceKey','annotations','annotationNumbers','unresolvedAnchorNodeIds','document','presentation'].includes(key))) throw new Error('Capture metadata contains an unsupported field.');
   const name=filename(input.name);
   if(typeof input.imageDataUrl!=='string'||!/^data:image\/(png|jpeg);base64,[A-Za-z0-9+/]+={0,2}$/.test(input.imageDataUrl)) throw new Error('A captured view must be a local PNG or JPEG image.');
   const base64=input.imageDataUrl.slice(input.imageDataUrl.indexOf(',')+1);
@@ -148,6 +150,10 @@ function capture(input:EcrCapture,proposal:Proposal):EcrCapture {
     if(unresolved.size>2000) throw new Error('Too many historical component anchors in the capture.');
     if(unresolved.size) result.unresolvedAnchorNodeIds=Array.from(unresolved);
     result.annotationIds=annotations.map(annotation=>annotation.id);
+    if(input.annotationNumbers!==undefined) {
+      if(!Array.isArray(input.annotationNumbers)||input.annotationNumbers.length!==annotations.length||input.annotationNumbers.some(value=>!Number.isSafeInteger(value)||value<1||value>250)) throw new Error('Captured markup numbers do not match their frozen snapshot.');
+      result.annotationNumbers=[...input.annotationNumbers];
+    }
     if(input.annotationIds!==undefined&&(!Array.isArray(input.annotationIds)||input.annotationIds.length!==annotations.length||new Set(input.annotationIds).size!==input.annotationIds.length||input.annotationIds.some(id=>!result.annotationIds!.includes(id)))) throw new Error('Capture markup references do not match their frozen snapshot.');
   } else if(input.annotationIds!==undefined) {
     if(!Array.isArray(input.annotationIds)||input.annotationIds.length) throw new Error('Capture the marked view again to retain its exact annotation text and source context.');
@@ -174,7 +180,7 @@ async function digestOf(manifest:EcrManifest,captures:EcrCapture[]):Promise<stri
 export async function createEcrPackage(input:Proposal,options:EcrPackageOptions={}):Promise<EcrPackage> {
   const proposal=validateProposal(input);
   const captures=(options.captures??[]);
-  if(!Array.isArray(captures)||captures.length>3) throw new Error('An ECR package supports up to three captured views.');
+  if(!Array.isArray(captures)||captures.length>4) throw new Error('An ECR package supports up to four captured views.');
   const images=captures.map(value=>capture(value,proposal));
   const attachments=options.attachments??[];
   if(!Array.isArray(attachments)||attachments.length>12) throw new Error('Too many review attachments.');

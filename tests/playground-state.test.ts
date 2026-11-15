@@ -194,6 +194,6 @@ describe('ECR review package and simulated handoff',()=>{
  it('refuses remote/script images, attachment traversal, duplicate names, and oversized captures',async()=>{
    const p=make();await expect(createEcrPackage(p,{captures:[{kind:'proposed',name:'image.png',imageDataUrl:'https://server/image.png'}]})).rejects.toThrow(/local PNG/);
    await expect(createEcrPackage(p,{attachments:[{name:'../escape.docx',mimeType:'a',byteLength:1}]})).rejects.toThrow(/simple filenames/);
-   await expect(createEcrPackage(p,{captures:Array.from({length:4},()=>({kind:'proposed' as const,name:'a.png',imageDataUrl:'data:image/png;base64,AAAA'}))})).rejects.toThrow(/three/);
+   await expect(createEcrPackage(p,{captures:Array.from({length:5},()=>({kind:'proposed' as const,name:'a.png',imageDataUrl:'data:image/png;base64,AAAA'}))})).rejects.toThrow(/four/);
  });
 });
