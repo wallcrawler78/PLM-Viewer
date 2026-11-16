@@ -99,7 +99,7 @@ export function ArenaConnection({ loading, issue, revisions, onRevision, onRetry
         {connected && authStatus?.logoutPath && <button className="button secondary" disabled={authBusy || authLoading} onClick={onDisconnect}>{authBusy?<LoaderCircle className="spin" size={15}/>:<LogOut size={15}/>}Disconnect Arena</button>}
         <button className="button secondary" onClick={onSample}>Open sample workspace</button>
       </div>}
-      <div className="arena-connection-assurance"><span><ShieldCheck size={14} />Your Arena permissions apply</span><span><Check size={14} />Read-only source connection</span></div>
+      <div className="arena-connection-assurance">{connected?<><span><ShieldCheck size={14} />Your Arena permissions apply</span><span><Check size={14} />Read-only source connection</span></>:<><span><ShieldCheck size={14} />Once connected, your own Arena permissions apply</span><span><Check size={14} />The connection is designed to be read-only</span></>}</div>
       {!loading && <p className="arena-sample-note">The sample workspace is separate and never contacts Arena.</p>}
     </section>
   </main>;

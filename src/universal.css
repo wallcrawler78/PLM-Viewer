@@ -150,3 +150,11 @@
 }
 
 .model-module-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 10px; color: #567282; font-size: 13px; background: #f3f6f8; }
+/* Four workspace tabs plus the panel toggles must fit a phone-width toolbar. */
+@media (max-width: 480px) {
+  .universal-toolbar { gap: 4px; padding-inline: 7px; }
+  .workspace-view-switch { min-width: 0; flex: 1 1 auto; }
+  .workspace-view-switch button { padding-inline: 6px; flex: 1 1 auto; min-width: 0; }
+  .workspace-view-switch button>svg { display: none; }
+  .universal-toolbar-spacer { display: none; }
+}

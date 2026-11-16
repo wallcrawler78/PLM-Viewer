@@ -51,6 +51,19 @@ export class LocalProposalStore {
     const stored=this.parse(raw,valid);
     return {proposal:stored.proposal,revision:stored.storageRevision};
   }
+  /** An explicit user choice only: keep this draft and write it over whatever is stored for this
+   * exact source, including a newer copy from another tab or a record that can no longer be read. */
+  replace(proposal:Proposal):number {
+    const valid=validateProposal(proposal);
+    let revision=1;
+    const raw=this.readRaw(valid);
+    if(raw!==null) { try { revision=this.parse(raw,valid).storageRevision+1; } catch(error) { if(!(error instanceof ProposalStorageError)||error.code!=='CORRUPT') throw error; } }
+    const next=JSON.stringify({schemaVersion:1,storageRevision:revision,proposal:valid} satisfies StoredProposal);
+    if(byteLength(next)>PLAYGROUND_LIMITS.storageBytes) throw new ProposalStorageError('QUOTA','This proposal is too large for local draft storage. Your changes remain open; export the review package.');
+    try { this.storage().setItem(proposalStorageKey(valid.sourceKey),next); }
+    catch(error) { if(error instanceof ProposalStorageError) throw error; throw new ProposalStorageError('QUOTA','Browser storage could not save this proposal. Your current draft and previous saved version have been retained.'); }
+    return revision;
+  }
   save(proposal:Proposal,expectedRevision:number):number {
     if(!Number.isSafeInteger(expectedRevision)||expectedRevision<0) throw new ProposalStorageError('CONFLICT','The draft storage revision is invalid. Reload the saved proposal before saving again.');
     const valid=validateProposal(proposal);

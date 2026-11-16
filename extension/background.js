@@ -9,7 +9,7 @@ chrome.runtime.onInstalled.addListener(async () => {
   await chrome.contextMenus.removeAll();
   // Application hosts listed by Arena's official service-status page. These only
   // control menu visibility; the launcher still reads explicit source parameters.
-  chrome.contextMenus.create({ id: MENU, title: 'Open in Review Studio', contexts: ['page', 'link'], documentUrlPatterns: [...ARENA_APPLICATION_PATTERNS, 'https://*.arenasolutions.com/*', 'https://*.ptc.com/*'] });
+  chrome.contextMenus.create({ id: MENU, title: 'Open in Review Studio', contexts: ['page', 'link'], documentUrlPatterns: [...ARENA_APPLICATION_PATTERNS] });
 });
 
 chrome.action.onClicked.addListener(() => chrome.tabs.create({ url: previewTarget(chrome.runtime.getURL('viewer.html')).href }));
@@ -24,7 +24,11 @@ chrome.contextMenus.onClicked.addListener(async (info) => {
   const settings = await chrome.storage.local.get(['viewerUrl', 'workspaceId']);
   try {
     if (!settings.viewerUrl || !settings.workspaceId) throw new Error('Configure the viewer URL and Arena workspace before opening a live item.');
-    const context = arenaContext(info.linkUrl || info.pageUrl, settings.workspaceId);
+    // The menu is offered only on Arena application pages, and only an Arena application
+    // link or page may supply source context. A link to any other site is not a source.
+    const source = info.linkUrl || info.pageUrl;
+    if (!isArenaApplicationUrl(info.pageUrl) || !isArenaApplicationUrl(source)) throw new Error('Open this from an item or attachment link inside the Arena application.');
+    const context = arenaContext(source, settings.workspaceId);
     await chrome.tabs.create({ url: viewerTarget(settings.viewerUrl, context).href });
   } catch (error) {
     await showLaunchError(error);

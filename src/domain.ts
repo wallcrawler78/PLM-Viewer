@@ -315,15 +315,23 @@ export function validateSupplierItem(value: unknown): SupplierItem {
   return value as SupplierItem;
 }
 
+/** Attribute values are scalars or null. Zero, false, an empty string and a missing key stay distinct; an object or a non-finite number is never accepted as a value. */
+function assertAttributeValues(value: unknown, owner: string): void {
+  if (value === undefined) return;
+  if (!value || typeof value !== 'object' || Array.isArray(value) || Object.values(value).some(attribute => attribute !== null && !['string', 'number', 'boolean'].includes(typeof attribute) || typeof attribute === 'number' && !Number.isFinite(attribute))) throw new Error(`Invalid attribute values for ${owner}.`);
+}
+
 export function validateSnapshot(snapshot: BomSnapshot): BomSnapshot {
   if (!snapshot || !snapshot.id || !snapshot.workspaceId || !snapshot.rootItemId || !snapshot.revision || !Array.isArray(snapshot.occurrences) || !Array.isArray(snapshot.parts) || !Array.isArray(snapshot.documents)) throw new Error('Incomplete BOM snapshot.');
   if (snapshot.units !== 'mm' || snapshot.upAxis !== 'Z') throw new Error('Adapter must normalize geometry to millimeters and Z up.');
+  assertAttributeValues(snapshot.attributes, 'the assembly');
   const parts = new Set<string>();
   for (const p of snapshot.parts) {
     const key = `${p.id}:${p.revision}`;
     if (parts.has(key)) throw new Error(`Duplicate part edition: ${key}`);
     parts.add(key);
     if (!validIdentityText(p.id) || !validIdentityText(p.revision)) throw new Error('Parts need an exact item identifier and revision.');
+    assertAttributeValues(p.attributes, `item ${p.id}`);
     assertSafeAssetUrl(p.stepUrl);
     // A STEP source without its hash cannot be verified, so it is never an exact edition.
     if ((p.stepUrl !== undefined || p.sourceHash !== undefined) && !isSourceHash(p.sourceHash)) throw new Error(`The STEP source for ${p.id} needs its exact SHA-256 source hash.`);
@@ -343,6 +351,7 @@ export function validateSnapshot(snapshot: BomSnapshot): BomSnapshot {
     if (!o.id || ids.has(o.id)) throw new Error('BOM occurrence identifiers must be unique.');
     ids.add(o.id);
     if (!finiteVec(o.position) || !finiteVec(o.rotation)) throw new Error(`Missing or invalid placement for ${o.id}`);
+    assertAttributeValues(o.attributes, `BOM line ${o.id}`);
     if (!Number.isFinite(o.quantity) || o.quantity <= 0) throw new Error(`Invalid quantity for ${o.id}`);
     if (o.modelState === 'loaded' && !parts.has(`${o.partId}:${o.partRevision}`)) throw new Error(`Loaded occurrence has no matching part edition: ${o.id}`);
   }
@@ -401,4 +410,13 @@ export function validateSchema(schema: WorkspaceSchema): WorkspaceSchema {
     ids.add(attribute.id);
   }
   return schema;
+}
+
+/** The document to show for one item revision in a configuration: a PDF first, then any other
+ * supported file. Only a file of that exact item revision qualifies; a different revision's
+ * document is never offered in its place. */
+export function documentForItem(snapshot: Pick<BomSnapshot, 'documents'> | null | undefined, itemId: string | undefined, revision: string | undefined, pdfOnly = false): Attachment | null {
+  if (!snapshot || !itemId || !revision) return null;
+  const files = snapshot.documents.filter(file => file.itemId === itemId && file.revision === revision);
+  return files.find(file => file.kind === 'pdf') ?? (pdfOnly ? null : files[0] ?? null);
 }
