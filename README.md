@@ -29,7 +29,7 @@ The assistant connection is optional. Local manual tools and the Preview ECR flo
 
 Preview proposal drafts save locally to the browser origin; live Arena proposals remain session drafts. Captured images and simulated receipts are session data, so use **Download review package** when you want to retain that evidence. Export/import of proposal JSON preserves scene intent and exact source binding without copying the original STEP/PDF/DOCX attachments.
 
-**Verification:** `npm run check` passed for 0.8.0 with **722 tests in 59 test files**, including TypeScript. `npm run build:extension` also passed for the 0.8.0 package. Browser interaction/layout and installed-Chrome qualification remain **pending manual gates**: automatic approval review blocked the attempted browser validation. No authenticated live AI call or live Arena ECR creation has been tested. Existing historical browser results apply to their recorded release, not to Playground.
+**Verification:** `npm run check` passed for 0.8.0 with **727 tests in 58 test files**, including TypeScript. `npm run build:extension` also passed for the 0.8.0 package. Browser interaction/layout and installed-Chrome qualification remain **pending manual gates**: automatic approval review blocked the attempted browser validation. No authenticated live AI call or live Arena ECR creation has been tested. Existing historical browser results apply to their recorded release, not to Playground.
 
 Use [the Playground test guide](docs/playground-testing.md) for a concrete local/Chrome walkthrough and [the implementation plan](docs/playground-plan.md) for delivered versus remaining phases.
 

@@ -1,7 +1,7 @@
 .model-viewport{position:relative;width:100%;height:100%;min-height:280px;overflow:hidden;background:#edf1f4;isolation:isolate;color:#304254;font-family:inherit}
 .model-canvas-container{position:absolute;inset:0;width:100%;height:100%}
 .model-webgl-canvas{display:block;width:100%;height:100%;outline:none;touch-action:none}
-.model-webgl-canvas:focus-visible{outline:2px solid #0f8f88;outline-offset:-3px}
+.model-webgl-canvas:focus-visible{outline:2px solid var(--focus-ring);outline-offset:-3px}
 .model-split-divider{position:absolute;top:0;bottom:0;left:50%;width:1px;background:#cbd5df;pointer-events:none;z-index:2}
 .model-revision-label{position:absolute;top:18px;display:flex;gap:8px;align-items:center;padding:7px 10px;background:#ffffffdf;border:1px solid #dbe2e8;border-radius:5px;font-size:10px;font-weight:650;letter-spacing:.025em;pointer-events:none;box-shadow:0 2px 5px #23334804}
 .model-revision-label-a{left:18px}.model-revision-label-b{left:calc(50% + 18px)}

@@ -25,6 +25,7 @@ function fixture(overrides = {}) {
     if (String(url) === `${AS}/.well-known/oauth-authorization-server`) return json(metadata);
     if (String(url) === `${AS}/token`) {
       state.tokenCalls++;
+      if (state.tokenFailure) { const failure = state.tokenFailure; if (failure.once) state.tokenFailure = undefined; if (failure.throw) throw new TypeError('synthetic network failure'); return new Response(JSON.stringify({ error: failure.error ?? 'temporarily_unavailable' }), { status: failure.status, headers: { 'Content-Type': 'application/json' } }); }
       if (state.failToken) return new Response(JSON.stringify({ error: 'invalid_grant', error_description: `${SECRET} private-upstream-message` }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       const params = new URLSearchParams(init.body), refresh = params.get('grant_type') === 'refresh_token';
       expect(params.get('resource')).toBe(state.resource);
@@ -167,6 +168,35 @@ describe('Arena OAuth runtime', () => {
     const refreshes = f.calls.filter(call => call.body?.get('grant_type') === 'refresh_token');
     expect(refreshes.map(call => call.body.get('refresh_token'))).toEqual(['refresh-1', 'refresh-1']);
     expect(refreshes.every(call => call.body.get('resource') === RESOURCE)).toBe(true);
+  });
+  it('keeps the session through a temporary refresh failure and ends it only when the grant is rejected', async () => {
+    for (const tokenFailure of [{ status: 503, once: true }, { status: 500, error: 'server_error', once: true }, { throw: true, once: true }]) {
+      const f = fixture(), sessionCookie = cookie(await f.complete(await f.login()), '__Host-arena-viewer');
+      const session = await f.oauth.resolveSession({ headers: { cookie: sessionCookie } });
+      f.advance(61_000); f.state.tokenFailure = tokenFailure;
+      const failure = await session.getAccessToken().catch(error => error);
+      expect(['UPSTREAM_ERROR', 'TIMEOUT'], JSON.stringify(tokenFailure)).toContain(failure.code);
+      const again = await f.oauth.resolveSession({ headers: { cookie: sessionCookie } });
+      expect(again, JSON.stringify(tokenFailure)).not.toBeNull();
+      expect((await again.getAccessToken()).accessToken).toMatch(/^access-alice-/);
+    }
+    const f = fixture(), sessionCookie = cookie(await f.complete(await f.login()), '__Host-arena-viewer');
+    const session = await f.oauth.resolveSession({ headers: { cookie: sessionCookie } });
+    f.advance(61_000); f.state.failToken = true;
+    await expect(session.getAccessToken()).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
+    f.state.failToken = false;
+    expect(await f.oauth.resolveSession({ headers: { cookie: sessionCookie } })).toBeNull();
+  });
+  it('budgets unauthenticated sign-in starts before any discovery request or store write', async () => {
+    const f = fixture({ loginStartLimit: 3 });
+    for (let i = 0; i < 3; i++) expect((await f.login()).response.status).toBe(302);
+    const calls = f.calls.length;
+    const refused = (await f.login()).response;
+    expect(refused.status).toBe(429);
+    expect(f.calls.length).toBe(calls);
+    expect(refused.headers['Set-Cookie'] ?? []).toEqual([]);
+    f.advance(61_000);
+    expect((await f.login()).response.status).toBe(302);
   });
   it('revokes its session if refresh changes the verified subject', async () => {
     const f = fixture(), callback = await f.complete(await f.login()), sessionCookie = cookie(callback, '__Host-arena-viewer');
