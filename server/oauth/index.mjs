@@ -79,6 +79,10 @@ export function createArenaOAuth(options = {}) {
   const { mcpEndpoint, redirectUri, client, store, resolveIdentity, allowedOrigins, development = false, now = Date.now } = options;
   const required = Boolean(mcpEndpoint && redirectUri && client?.clientId && store && typeof resolveIdentity === 'function' && Array.isArray(allowedOrigins) && allowedOrigins.length);
   let configured = required, origin, redirect, key, namespace, clientInformation, authMethod;
+  // Sign-in starts are unauthenticated, write store records and trigger outbound discovery, so they
+  // are budgeted per process. A deployment behind several processes needs a shared limiter as well.
+  const loginStartLimit = options.loginStartLimit ?? 30, loginStartWindowMs = options.loginStartWindowMs ?? 60_000, loginStarts = [];
+  if (!Number.isInteger(loginStartLimit) || loginStartLimit < 1 || !Number.isFinite(loginStartWindowMs) || loginStartWindowMs < 1000) throw new Error('Invalid sign-in start budget.');
   const timeoutMs = options.timeoutMs ?? 15000, flowTtlMs = options.flowTtlMs ?? 10 * 60_000, sessionTtlMs = options.sessionTtlMs ?? 8 * 60 * 60_000, refreshLeewayMs = options.refreshLeewayMs ?? 30_000;
   for (const value of [timeoutMs, flowTtlMs, sessionTtlMs]) if (!Number.isSafeInteger(value) || value < 1 || value > 30 * 24 * 60 * 60_000) throw new ViewerError('BAD_REQUEST');
   if (!Number.isSafeInteger(refreshLeewayMs) || refreshLeewayMs < 0) throw new ViewerError('BAD_REQUEST');
@@ -159,6 +163,13 @@ export function createArenaOAuth(options = {}) {
           signal?.throwIfAborted();
           await store.set(storageKey('session', id), record, record.sessionExpiresAt);
         } catch (error) {
+          // Only an answer from the authorization server that the grant or client is no longer valid,
+          // or a failed identity check, ends the session. A cancelled request, a timeout, a network
+          // failure or a temporary server error leaves it in place so the next request can refresh.
+          if (signal?.aborted) throw signal.reason ?? error;
+          const rejected = ['invalid_grant', 'invalid_client', 'unauthorized_client', 'invalid_token', 'access_denied'].includes(error?.code);
+          const identityFailure = error instanceof ViewerError && !['UPSTREAM_ERROR', 'TIMEOUT', 'RATE_LIMITED'].includes(error.code);
+          if (!rejected && !identityFailure) throw new ViewerError(error?.name === 'TimeoutError' || error?.name === 'AbortError' ? 'TIMEOUT' : 'UPSTREAM_ERROR');
           await store.delete(storageKey('session', id));
           throw error instanceof ViewerError && error.code === 'CONNECTION_CHANGED' ? error : new ViewerError('UNAUTHENTICATED');
         }
@@ -223,6 +234,10 @@ export function createArenaOAuth(options = {}) {
         if (route === 'login') {
           if ([...url.searchParams.keys()].some(name => name !== 'returnTo')) throw new ViewerError('BAD_REQUEST');
           const returnTo = sanitizeReturnTo(url.searchParams.get('returnTo') ?? '/', origin);
+          const started = now();
+          while (loginStarts.length && started - loginStarts[0] >= loginStartWindowMs) loginStarts.shift();
+          if (loginStarts.length >= loginStartLimit) throw new ViewerError('RATE_LIMITED');
+          loginStarts.push(started);
           const discovery = await discoverArenaOAuth(discoveryOptions(signal)); checkClient(discovery);
           const state = randomId(), flowId = randomId();
           const { authorizationUrl, codeVerifier } = await startAuthorization(discovery.issuer, { metadata: discovery.metadata, clientInformation, redirectUrl: redirect.href, state, resource: discovery.resource, scope: discovery.scope });

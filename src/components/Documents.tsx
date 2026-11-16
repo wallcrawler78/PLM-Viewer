@@ -3,7 +3,6 @@ import type { ReactNode } from 'react';
 import { getDocument, OPS, TextLayer } from 'pdfjs-dist';
 import type { PDFDocumentProxy, PDFPageProxy, RenderTask } from 'pdfjs-dist';
 import { AlertCircle, ChevronLeft, ChevronRight, FileText, LoaderCircle, Minus, Plus, Search, X } from 'lucide-react';
-import { compareText } from '../text-diff';
 import type { DocumentTextBlock } from '../document-review';
 import { matchesDocumentAnchor } from '../document-sources';
 import { DocumentScrollLink, documentNavigationScrollTop, readDocumentNavigation, reduceDocumentFocus } from '../document-navigation';
@@ -634,53 +633,5 @@ function FileContent({ file, pageOverlay, sourcePresentation = 'item', markMode,
       {file.kind === 'docx' && <div className={`docx-content ${markMode ? 'mark-mode' : ''}`} style={{ visibility: ready ? 'visible' : 'hidden', zoom }} ref={docxContainer} onClick={docxClick} />}
     </div>
     <div className="file-source">{sourcePresentation === 'local' ? <>{file.revision} <span>·</span> Local source</> : <>Rev {file.revision} <span>·</span> File edition {file.edition}</>} <span>·</span> {file.kind === 'docx' ? 'Reflowed pages' : 'Source pages'}</div>
-  </div>;
-}
-
-export function DocumentComparison({ before, after, onClose, onSuggest }: {
-  before: DocumentFile; after: DocumentFile; onClose: () => void;
-  onSuggest: (message: string, file: DocumentFile) => void;
-}) {
-  const [leftExtraction, setLeftExtraction] = useState<DocumentExtraction | null>(null);
-  const [rightExtraction, setRightExtraction] = useState<DocumentExtraction | null>(null);
-  const [showChanges, setShowChanges] = useState(true);
-  const dialog = useRef<HTMLElement>(null);
-  const closeRef = useRef(onClose); closeRef.current = onClose;
-  useEffect(() => {
-    const previous = document.activeElement as HTMLElement;
-    dialog.current?.querySelector<HTMLElement>('button')?.focus();
-    const key = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') { event.preventDefault(); closeRef.current(); }
-      if (event.key === 'Tab') {
-        const controls = Array.from(dialog.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),a[href]') ?? [])
-          .filter(control => !control.hidden && control.getClientRects().length > 0 && getComputedStyle(control).visibility !== 'hidden');
-        if (!controls.length) return;
-        const focused = document.activeElement as HTMLElement;
-        if (event.shiftKey && (focused === controls[0] || !controls.includes(focused))) { event.preventDefault(); controls.at(-1)?.focus(); }
-        else if (!event.shiftKey && (focused === controls.at(-1) || !controls.includes(focused))) { event.preventDefault(); controls[0]?.focus(); }
-      }
-    };
-    document.addEventListener('keydown', key);
-    return () => { document.removeEventListener('keydown', key); if(previous?.isConnected) previous.focus(); };
-  }, []);
-  const leftText = leftExtraction?.blocks.map(block => block.text).join('\n') ?? null;
-  const rightText = rightExtraction?.blocks.map(block => block.text).join('\n') ?? null;
-  const coverage = documentComparisonCoverage(leftExtraction, rightExtraction);
-  const changes = coverage.canCompare ? compareText(leftText ?? '', rightText ?? '') : [];
-  const changed = changes.filter(c => c.kind !== 'equal');
-  const textStatus = coverage.pending ? 'Extracting text…' : coverage.unavailable ? 'Text comparison unavailable' : `${changed.length} text changes${coverage.partial ? ' · partial coverage' : ''}`;
-  return <div className="modal-backdrop" role="presentation">
-    <section ref={dialog} className="document-comparison modal" role="dialog" aria-modal="true" aria-label="Compare document revisions">
-      <div className="modal-header"><div><span className="eyebrow">DOCUMENT COMPARISON</span><h2>Review document changes</h2></div><button className="button secondary" onClick={onClose}>Back to assembly</button></div>
-      <div className="comparison-docs">
-        <div><div className="comparison-doc-label"><span className="revision-tag a">A</span><strong>{before.name}</strong><span>Edition {before.edition}</span></div><FileView file={before} onExtraction={setLeftExtraction} compact /></div>
-        <div><div className="comparison-doc-label"><span className="revision-tag b">B</span><strong>{after.name}</strong><span>Edition {after.edition}</span></div><FileView file={after} onExtraction={setRightExtraction} compact /></div>
-      </div>
-      <div className="text-difference-header"><strong>{textStatus}</strong><span>Extracted text comparison; formatting and scanned images are not classified.</span><button className="text-button" onClick={() => setShowChanges(s => !s)}>{showChanges ? 'Collapse' : 'Expand'}</button></div>
-      {showChanges && <div className="text-differences">
-        {coverage.pending ? <p className="muted">Extracting text from both documents…</p> : coverage.unavailable ? <p className="muted">Text could not be extracted from one or both files. Compare the rendered pages; scanned documents require OCR.</p> : changed.length === 0 ? <p>{coverage.partial ? 'No differences found in the available text. Some content was not compared.' : 'No text differences found.'}</p> : changes.map((c, i) => c.kind !== 'equal' && <div className={`text-change ${c.kind}`} key={i}><span>{c.kind === 'added' ? '+' : '−'}</span><p>{c.text}</p>{c.kind === 'added' && <button className="text-button" onClick={() => onSuggest(`Verify the updated requirement against the model: “${c.text.slice(0, 500)}”`, after)}>Suggest review note</button>}</div>)}
-      </div>}
-      <div className="comparison-footnote">Suggested notes are review prompts generated from the text changes. They require your review before posting.{coverage.partial ? ' Comparison is incomplete; unavailable content can appear as changes.' : ''}{(leftText?.split(/\n+/).length??0)>1500||(rightText?.split(/\n+/).length??0)>1500?' Comparison is limited to the first 1,500 nonempty lines in each file.':''}</div>
-    </section>
   </div>;
 }

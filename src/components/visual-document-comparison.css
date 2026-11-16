@@ -55,7 +55,7 @@
 .visual-comparison-footer>div>span.modified{background:#dc9724}
 .visual-comparison-footer>p{margin:0;font-size:9px;line-height:1.6}
 .visual-document-review button:disabled,.visual-document-review input:disabled{opacity:.45;cursor:default}
-.visual-document-review :focus-visible{outline:2px solid #488f9c;outline-offset:3px}
+.visual-document-review :focus-visible{outline:2px solid var(--focus-ring);outline-offset:3px}
 .visual-overview-toggle{padding:5px 8px;border-radius:5px;background:#f1f7f5}
 .visual-overview-toggle.active{background:#e4f2ed}
 .visual-overview-hint{margin-left:auto;color:#6c8490;font-size:10px}

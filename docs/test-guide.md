@@ -221,7 +221,7 @@ Automated checks cover launch/source validation, explicit document families, sam
 For focused document coverage, run:
 
 ```bash
-npx vitest run tests/document-processing.test.ts tests/document-review.test.ts tests/document-rendering.test.ts tests/document-navigation.test.ts tests/document-sources.test.ts tests/text-diff.test.ts
+npx vitest run tests/document-processing.test.ts tests/document-review.test.ts tests/document-rendering.test.ts tests/document-navigation.test.ts tests/document-sources.test.ts
 ```
 
 These checks include empty-versus-unavailable extraction, partial coverage, source-byte and Word ZIP expansion bounds, local PDF resource resolution, and source deadline/cancellation cleanup. They do not replace visual checks or an installed Chrome run. `npm run build:extension` produces and validates the package structure; record package/build validation separately from actual extension installation and use.
