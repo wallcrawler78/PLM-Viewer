@@ -11,8 +11,8 @@
 .viewer-preference-storage-notice{color:#805c25}
 .viewer-preferences .viewer-preference-reset-note{margin:6px 0 0;line-height:1.5}
 @media(max-width:480px){.viewer-preferences-footer{flex-direction:column;gap:7px}}
-.viewer-preferences-dialog{width:min(480px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;padding:24px;margin:auto;border:1px solid #dbe6ec;border-radius:14px;background:#fff;color:#20384d;box-shadow:0 20px 80px #142b4533}
+.viewer-preferences-dialog{width:min(480px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;padding:24px;margin:auto;border:1px solid var(--slate-096);border-radius:14px;background:var(--white);color:var(--blue-774);box-shadow:0 20px 80px #142b4533}
 .viewer-preferences-dialog::backdrop{background:#12263870;backdrop-filter:blur(3px)}
 .viewer-preferences-dialog .viewer-preferences{margin:0;padding:0;border:0}
-.viewer-preferences-dialog .viewer-preferences h3{margin:0 32px 0 0;font-size:18px;line-height:1.4;color:#20384d}
+.viewer-preferences-dialog .viewer-preferences h3{margin:0 32px 0 0;font-size:18px;line-height:1.4;color:var(--blue-774)}
 .viewer-preferences-dialog-close{position:absolute;top:18px;right:18px}

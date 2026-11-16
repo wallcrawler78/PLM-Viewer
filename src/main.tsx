@@ -12,6 +12,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import { ViewerPreferencesProvider } from './ViewerPreferences';
 // Keep viewport defaults before the workspace overrides even though its JS is lazy.
+import './tokens.css';
 import './components/model/viewport.css';
 import './styles.css';
 import './universal.css';
