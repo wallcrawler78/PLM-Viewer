@@ -39,6 +39,7 @@ Keep UI language about the review task. Explain precision, unavailable sources, 
 ## Implementation and verification
 
 - Keep changes scoped and preserve existing behavior outside the request. Use the lockfile and avoid unrelated dependency churn.
+- Colours come from tokens: semantic ones in `src/styles.css` (`--teal`, `--border`, `--muted`, `--text`, `--focus-ring`, …) and the shared palette in `src/tokens.css`. Use an existing token for new styling instead of a new hex value, and do not restate a property in a later rule with the same selector to override an earlier one; change the original rule.
 - Prefer accessible labeled controls, keyboard operation, meaningful loading/error/empty states, and cancellation of obsolete async work.
 - Run `npm run check` and `npm run build` for substantive code changes. Add or adjust behavioral tests for concrete source-resolution, transform, validation, persistence, and integration risks; avoid tests that only mirror implementation details.
 - Use `docs/test-guide.md` for browser verification of affected workflows. Report checks actually run and any remaining verification limit.
